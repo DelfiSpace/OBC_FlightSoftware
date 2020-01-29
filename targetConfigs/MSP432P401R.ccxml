@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configurations XML_version="1.2" id="configurations_0">
+<configuration XML_version="1.2" id="SEGGER J-Link Emulator_0">
+        <instance XML_version="1.2" desc="SEGGER J-Link Emulator_0" href="connections/segger_j-link_connection.xml" id="SEGGER J-Link Emulator_0" xml="segger_j-link_connection.xml" xmlpath="connections"/>
+        <connection XML_version="1.2" id="SEGGER J-Link Emulator_0">
+            <instance XML_version="1.2" href="drivers/jlinkcs_dap.xml" id="drivers" xml="jlinkcs_dap.xml" xmlpath="drivers"/>
+            <instance XML_version="1.2" href="drivers/jlinkcortexm4.xml" id="drivers" xml="jlinkcortexm4.xml" xmlpath="drivers"/>
+            <platform XML_version="1.2" id="platform_0">
+                <instance XML_version="1.2" desc="MSP432P401R_0" href="devices/msp432p401r.xml" id="MSP432P401R_0" xml="msp432p401r.xml" xmlpath="devices"/>
+                <device HW_revision="1" XML_version="1.2" description="ARM Cortex-M4F MCU" id="MSP432P401R_0" partnum="MSP432P401R" simulation="no">
+                    <router HW_revision="1.0" XML_version="1.2" description="CS_DAP Router" id="CS_DAP_0" isa="CS_DAP">
+                        <subpath id="subpath_0">
+                            <cpu HW_revision="1.0" XML_version="1.2" description="Cortex M4 CPU" deviceSim="false" id="CORTEX_M4_0" isa="CORTEX_M4_432">
+                                <property Type="choicelist" Value="1" id="Target Interface Type"/>
+                            </cpu>
+                        </subpath>
+                    </router>
+                </device>
+            </platform>
+        </connection>
+    </configuration>
+</configurations>
