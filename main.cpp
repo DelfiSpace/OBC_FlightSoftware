@@ -26,7 +26,13 @@ TestService test;
 PingService ping;
 ResetService reset( GPIO_PORT_P4, GPIO_PIN0, &fram );
 HousekeepingService<OBCTelemetryContainer> hk;
+
+#ifndef SW_VERSION
 SoftwareUpdateService SWupdate(fram);
+#else
+SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
+#endif
+
 Service* services[] = { &ping, &reset, &hk, &test, &SWupdate };
 
 // ADCS board tasks
