@@ -24,7 +24,7 @@ DSerial serial;
 // services running in the system
 TestService test;
 PingService ping;
-ResetService reset( GPIO_PORT_P4, GPIO_PIN0 );
+ResetService reset( GPIO_PORT_P4, GPIO_PIN0, &fram );
 HousekeepingService<OBCTelemetryContainer> hk;
 SoftwareUpdateService SWupdate(fram);
 Service* services[] = { &ping, &reset, &hk, &test, &SWupdate };
@@ -304,7 +304,13 @@ void main(void)
     //cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
     //cmdHandler.onValidCommand(&validCmd);
 
-    serial.println("OBC booting...Slot 0!");
+    serial.print("OBC booting...SLOT: ");
+        serial.println(Bootloader::getCurrentSlot(), DEC);
+
+        if(HAS_SW_VERSION == 1){
+            serial.print("SW_VERSION: ");
+            serial.println((const char*)xtr(SW_VERSION));
+        }
 
     TaskManager::start(tasks, 1);
 }

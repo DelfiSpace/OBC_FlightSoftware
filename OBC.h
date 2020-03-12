@@ -9,6 +9,9 @@
 #define OBC_H_
 
 #include <driverlib.h>
+#include "SLOT_SELECT.h"
+#include "SoftwareUpdateService.h"
+#include "Bootloader.h"
 #include "OBCTelemetryContainer.h"
 #include "msp.h"
 #include "DelfiPQcore.h"
@@ -29,8 +32,6 @@
 #include "MB85RS.h"
 #include "TestService.h"
 #include "PeriodicTaskNotifier.h"
-#include "Bootloader.h"
-#include "SoftwareUpdateService.h"
 
 #define FCLOCK 48000000
 
