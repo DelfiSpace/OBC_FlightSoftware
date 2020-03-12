@@ -1,0 +1,27 @@
+################################################################################################################################################################
+# C. H. Broekhuizen
+#
+# This File is automatically included in Generation of the Makefile of Code Composer
+# File adds a predefined variable (macro) SW_VERSION and WORKSPACE_FOLDER to the build the build which contains the Git hashes. 
+# The letter 'D' is appended in front of the Hash if the current version is dirty (uncommitted changes), if the version is NOT dirty, a '0' is appended
+# This file should be in the project root at the same place as both the project root and the .git file
+# Also one should ensure that git is installed and accessible from the shell
+################################################################################################################################################################
+
+WORKSPACE_FOLDER := $(shell git rev-parse --show-superproject-working-tree)
+
+ifeq ($(shell git diff --stat),)
+SW_GIT_HASH := 0$(shell git rev-parse --short HEAD)
+else
+SW_GIT_HASH := D$(shell git rev-parse --short HEAD)
+endif
+
+ifeq ($(shell cd $(WORKSPACE_FOLDER) && git diff --stat),)
+SW_GIT_HASH := $(SW_GIT_HASH)0$(shell cd $(WORKSPACE_FOLDER) && git rev-parse --short HEAD)
+else
+SW_GIT_HASH := $(SW_GIT_HASH)D$(shell cd $(WORKSPACE_FOLDER) && git rev-parse --short HEAD)
+endif
+
+$(shell echo $(SW_GIT_HASH) > SW_VERSION)
+
+GEN_OPTS__FLAG += --define=SW_VERSION=""${SW_GIT_HASH}""
