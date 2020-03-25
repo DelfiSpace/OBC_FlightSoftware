@@ -42,13 +42,7 @@
 
 --retain=flashMailbox
 
-#define SLOT0 	 0x00000000
-#define SLOT1	 0x00020000
-#define SLOT2 	 0x00030000
-#define SLOTSIZE 0x00010000
-
-#define SELECTED_SLOT (SLOT0)
-
+#include "SLOT_SELECT.h"
 
 MEMORY
 {
@@ -66,7 +60,7 @@ MEMORY
     /* and SRAM_DATA memory areas are overlapping. You need to take measures to separate       */
     /* data from code in RAM. This is only valid for Compiler version earlier than 15.09.0.STS.*/ 
     SRAM_CODE  (RWX): origin = 0x01000000, length = 0x00010000
-    SRAM_DATA  (RW) : origin = 0x20000000, length = 0x00010000
+    SRAM_DATA  (RW) : origin = 0x20000004, length = 0x00010000
 #endif
 #endif
 }
