@@ -18,9 +18,6 @@ Bootloader bootLoader = Bootloader(fram);
 // CDHS bus handler
 PQ9Bus pq9bus(3, GPIO_PORT_P9, GPIO_PIN0);
 
-// debug console handler
-DSerial serial;
-
 // services running in the system
 TestService test;
 PingService ping;
@@ -123,7 +120,7 @@ void retrieveCommCommands(){
         while(cmdReceivedFlag == false);
         cmdReceivedFlag = false;
         if(receivedFrame->getPayload()[1] == 0){
-            serial.println("COMMS: No more GS commands-");
+            Console::log("COMMS: No more GS commands-");
             allRetrieved = true;
         }else if(receivedFrame->getPayload()[2+2] == 99){
             passFrame.setDestination(receivedFrame->getPayload()[2+0]);
@@ -175,7 +172,7 @@ void retrieveCommCommandsReply(){
         while(cmdReceivedFlag == false);
         cmdReceivedFlag = false;
         if(receivedFrame->getPayload()[1] == 0){
-            serial.println("COMMS: No more GS commands-");
+            Console::log("COMMS: No more GS commands-");
             allRetrieved = true;
         }else if(receivedFrame->getPayload()[2+2] == 99){
             passFrame.setDestination(receivedFrame->getPayload()[2+0]);
@@ -286,7 +283,7 @@ void main(void)
     temp.init();
 
     // initialize the console
-    serial.begin( );                        // baud rate: 9600 bps
+    Console::init( 115200 );                        // baud rate: 9600 bps
     pq9bus.begin(115200, 1);     // baud rate: 115200 bps
                                             // address OBC (1)
 
@@ -310,13 +307,11 @@ void main(void)
     //cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
     //cmdHandler.onValidCommand(&validCmd);
 
-    serial.print("OBC booting...SLOT: ");
-        serial.println(Bootloader::getCurrentSlot(), DEC);
+    Console::log("OBC booting...SLOT: %d", (int) Bootloader::getCurrentSlot());
 
-        if(HAS_SW_VERSION == 1){
-            serial.print("SW_VERSION: ");
-            serial.println((const char*)xtr(SW_VERSION));
-        }
+    if(HAS_SW_VERSION == 1){
+        Console::log("SW_VERSION: %s", (const char*)xtr(SW_VERSION));
+    }
 
     TaskManager::start(tasks, 1);
 }

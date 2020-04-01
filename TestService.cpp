@@ -7,55 +7,44 @@
 
 #include "TestService.h"
 
-extern DSerial serial;
 extern MB85RS fram;
 
 bool TestService::process(DataMessage &command, DataMessage &workingBuffer)
 {
     if (command.getPayload()[0] == 0)
-    {
-        serial.println("TestService");
+     {
+        Console::log("TestService");
 
-        if (command.getPayload()[1] == 0)
-        {
-            serial.print("Ping: ");
-            serial.print(fram.ping(), DEC);
-            serial.println();
+         if (command.getPayload()[1] == 0)
+         {
 
-            unsigned long id = fram.getID();
-                        serial.print("ID: ");
-                        serial.print(id, HEX);
-                        serial.println();
+             Console::log("Ping: %d",(int) fram.ping());
 
-        } else if (command.getPayload()[1] == 1)
-        {
-            serial.println("Write");
-            serial.print("Address: ");
-            serial.print(command.getPayload()[2], DEC);
-            serial.println();
-            serial.print("Value: ");
-            serial.print(command.getPayload()[3], DEC);
-            serial.println();
-            fram.write(command.getPayload()[2], &command.getPayload()[3], 1);
+             unsigned long id = fram.getID();
+             Console::log("ID: %x", id);
 
-        } else if (command.getPayload()[1] == 2)
-        {
-            unsigned char v;
-            fram.read(command.getPayload()[2], &v, 1);
-            serial.println("Read");
-            serial.print("Address: ");
-            serial.print(command.getPayload()[2], DEC);
-            serial.println();
-            serial.print("Value: ");
-            serial.print(v, DEC);
-            serial.println();
-        } else if (command.getPayload()[1] == 3)
-        {
-            serial.println("Erase all");
-            fram.erase();
-        }
 
-        return true;
-    }
-    return false;
+         } else if (command.getPayload()[1] == 1)
+         {
+             Console::log("Write");
+             Console::log("Address: %d | Value: %d", command.getPayload()[2], command.getPayload()[3]);
+             fram.write(command.getPayload()[2], &command.getPayload()[3], 1);
+
+         } else if (command.getPayload()[1] == 2)
+         {
+             unsigned char v;
+             fram.read(command.getPayload()[2], &v, 1);
+             Console::log("Read");
+             Console::log("Address: %d | Value: %d", command.getPayload()[2], v);
+         } else if (command.getPayload()[1] == 3)
+         {
+             Console::log("Erase all");
+             fram.erase();
+         }
+
+         return true;
+     }
+     return false;
 }
+
+
