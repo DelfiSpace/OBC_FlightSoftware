@@ -12,6 +12,9 @@ TMP100 temp(I2Cinternal, 0x48);
 DSPI spi(3);
 MB85RS fram(spi, GPIO_PORT_P1, GPIO_PIN0 );
 
+// HardwareMonitor
+HWMonitor hwMonitor(&fram);
+
 // Bootloader
 Bootloader bootLoader = Bootloader(fram);
 
@@ -252,6 +255,8 @@ void periodicTask()
 
 void acquireTelemetry(OBCTelemetryContainer *tc)
 {
+    tc->setUpTime(uptime);
+    //tc->setMCUTemperature(hwMonitor.getMCUTemp());
 
 }
 
@@ -264,6 +269,11 @@ void main(void)
     // - clock source
     // - clock tree
     DelfiPQcore::initMCU();
+
+    // initialize the ADC
+    // - ADC14 and FPU Module
+    // - MEM0 for internal temperature measurements
+    ADCManager::initADC();
 
     // Initialize I2C master
     I2Cinternal.setFastMode();
@@ -295,6 +305,10 @@ void main(void)
     // - initialize the pins for the hardware watch-dog
     // - prepare the pin for power cycling the system
     reset.init();
+
+    // initialize HWMonitor readings
+    hwMonitor.readResetStatus();
+    hwMonitor.readCSStatus();
 
     // link the command handler to the PQ9 bus:
     // every time a new command is received, it will be forwarded to the command handler
