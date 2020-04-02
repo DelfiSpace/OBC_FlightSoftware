@@ -37,7 +37,7 @@ Service* services[] = { &ping, &reset, &hk, &test, &SWupdate };
 
 // ADCS board tasks
 //CommandHandler<PQ9Frame> cmdHandler(pq9bus, services, 5);
-PeriodicTask timerTask(10, periodicTask);
+PeriodicTask timerTask(1000, periodicTask);
 PeriodicTask* periodicTasks[] = {&timerTask};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
 Task* tasks[] = { &timerTask };
