@@ -24,7 +24,7 @@ PQ9Bus pq9bus(3, GPIO_PORT_P9, GPIO_PIN0);
 // services running in the system
 TestService test;
 PingService ping;
-ResetService reset( GPIO_PORT_P4, GPIO_PIN0, &fram );
+ResetService reset( GPIO_PORT_P4, GPIO_PIN0 );
 HousekeepingService<OBCTelemetryContainer> hk;
 
 #ifndef SW_VERSION
