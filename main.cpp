@@ -3,9 +3,6 @@
 // I2C bus
 DWire I2Cinternal(0);
 INA226 powerBus(I2Cinternal, 0x40);
-INA226 torquerX(I2Cinternal, 0x41);
-INA226 torquerY(I2Cinternal, 0x42);
-INA226 torquerZ(I2Cinternal, 0x43);
 TMP100 temp(I2Cinternal, 0x48);
 
 // SPI bus
@@ -255,8 +252,19 @@ void periodicTask()
 
 void acquireTelemetry(OBCTelemetryContainer *tc)
 {
+    unsigned short v;
+    signed short i, t;
+
+
     tc->setUpTime(uptime);
-    //tc->setMCUTemperature(hwMonitor.getMCUTemp());
+
+    // measure the power bus
+    tc->setBusStatus((!powerBus.getVoltage(v)) & (!powerBus.getCurrent(i)));
+    tc->setBusVoltage(v);
+    tc->setBusCurrent(i);
+
+    tc->setTmpStatus(!temp.getTemperature(t));
+
 
 }
 
@@ -285,9 +293,6 @@ void main(void)
 
     // initialize the shunt resistor
     powerBus.setShuntResistor(40);
-    torquerX.setShuntResistor(40);
-    torquerY.setShuntResistor(40);
-    torquerZ.setShuntResistor(40);
 
     // initialize temperature sensor
     temp.init();
