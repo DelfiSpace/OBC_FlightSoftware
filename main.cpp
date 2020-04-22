@@ -90,7 +90,7 @@ void main(void)
     // every time a new command is received, it will be forwarded to the command handler
     // TODO: put back the lambda function after bug in CCS has been fixed
     pq9bus.setReceiveHandler([](DataFrame &newFrame){ cmdHandler.received(newFrame); });
-    pq9bus.setReceiveHandler(&receivedCommand);
+    //pq9bus.setReceiveHandler(&receivedCommand);
 
     // every time a command is correctly processed, call the watch-dog
     // TODO: put back the lambda function after bug in CCS has been fixed
@@ -103,8 +103,5 @@ void main(void)
         Console::log("SW_VERSION: %s", (const char*)xtr(SW_VERSION));
     }
 
-    // print the boot count
-    //Console::log("boot_count: %d\n", boot_count);
-
-    TaskManager::start(tasks, 3);
+    TaskManager::start(tasks, 2);
 }
