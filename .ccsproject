@@ -7,12 +7,12 @@
 	<deviceEndianness value="little"/>
 	<codegenToolVersion value="18.12.2.LTS"/>
 	<isElfFormat value="true"/>
-	<connection value="common/targetdb/connections/segger_j-link_connection.xml"/>
+	<connection value="common/targetdb/connections/TIXDS110_Connection.xml"/>
 	<linkerCommandFile value="msp432p401r.cmd"/>
 	<rts value="libc.a"/>
 	<createSlaveProjects value=""/>
 	<templateProperties value="id=com.ti.common.project.core.emptyProjectWithMainTemplate_msp432"/>
 	<filesToOpen value="main.c"/>
-	<isTargetManual value="true"/>
+	<isTargetManual value="false"/>
 	<defaultConfiguration value="Release"/>
 </projectOptions>
