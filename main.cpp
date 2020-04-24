@@ -58,176 +58,6 @@ void validCmd(void)
     reset.kickInternalWatchDog();
 }
 
-void pingModules()
-{
-    //serial.println("Ping COMMS!");
-
-    PQ9Frame pingFrame;
-
-    pingFrame.setSource(1);
-    pingFrame.setDestination(4); //ping COMMS
-    pingFrame.setPayloadSize(2);
-    pingFrame.getPayload()[0] = 17;
-    pingFrame.getPayload()[1] = 1;
-
-    pq9bus.transmit(pingFrame);
-    //wait for reply
-    while(cmdReceivedFlag == false);
-    cmdReceivedFlag = false;
-
-//    serial.print("Reply : ");
-//    serial.print(receivedFrame->getSource(), DEC);
-//    serial.print(" ");
-//    serial.print(receivedFrame->getPayload()[0], DEC);
-//    serial.print(" ");
-//    serial.println(receivedFrame->getPayload()[1], DEC);
-//
-//
-//    serial.println("Ping EPS!");
-    pingFrame.setSource(1);
-    pingFrame.setDestination(2); //ping EPS
-    pingFrame.setPayloadSize(2);
-    pingFrame.getPayload()[0] = 17;
-    pingFrame.getPayload()[1] = 1;
-
-    pq9bus.transmit(pingFrame);
-    //wait for reply
-    while(cmdReceivedFlag == false);
-    cmdReceivedFlag = false;
-//    serial.print("Reply : ");
-//    serial.print(receivedFrame->getSource(), DEC);
-//    serial.print(" ");
-//    serial.print(receivedFrame->getPayload()[0], DEC);
-//    serial.print(" ");
-//    serial.println(receivedFrame->getPayload()[1], DEC);
-
-}
-
-void retrieveCommCommands(){
-    PQ9Frame passFrame;
-    passFrame.setSource(1);
-
-    PQ9Frame requestFrame;
-    requestFrame.setSource(1);
-    requestFrame.setDestination(4); //ping COMMS
-    requestFrame.setPayloadSize(2);
-    requestFrame.getPayload()[0] = 20;
-    requestFrame.getPayload()[1] = 4;
-
-    bool allRetrieved = false;
-    while(!allRetrieved){
-        pq9bus.transmit(requestFrame);
-        while(cmdReceivedFlag == false);
-        cmdReceivedFlag = false;
-        if(receivedFrame->getPayload()[1] == 0){
-            Console::log("COMMS: No more GS commands-");
-            allRetrieved = true;
-        }else if(receivedFrame->getPayload()[2+2] == 99){
-            passFrame.setDestination(receivedFrame->getPayload()[2+0]);
-            passFrame.setPayloadSize(receivedFrame->getPayload()[2+1]);
-            passFrame.setSource(1);
-            for(int p = 0; p < passFrame.getPayloadSize(); p++){
-                passFrame.getPayload()[p] = receivedFrame->getPayload()[5+p];
-            }
-
-
-
-            pq9bus.transmit(passFrame);
-            while(cmdReceivedFlag == false);
-            cmdReceivedFlag = false;
-//            serial.print("  ===> Reply: ");
-//            serial.print(receivedFrame->getDestination(), DEC);
-//            serial.print(" ");
-//            serial.print(receivedFrame->getPayloadSize(), DEC);
-//            serial.print(" ");
-//            serial.print(receivedFrame->getSource(), DEC);
-//            serial.print(" ");
-//            for(int k = 0; k < receivedFrame->getPayloadSize(); k++){
-//                serial.print(receivedFrame->getPayload()[k], DEC);
-//                serial.print(" ");
-//            }
-//
-//            serial.println("");
-
-
-
-        }
-    }
-}
-
-void retrieveCommCommandsReply(){
-    PQ9Frame passFrame;
-    passFrame.setSource(1);
-
-    PQ9Frame requestFrame;
-    requestFrame.setSource(1);
-    requestFrame.setDestination(4); //ping COMMS
-    requestFrame.setPayloadSize(2);
-    requestFrame.getPayload()[0] = 20;
-    requestFrame.getPayload()[1] = 4;
-
-    bool allRetrieved = false;
-    while(!allRetrieved){
-        pq9bus.transmit(requestFrame);
-        while(cmdReceivedFlag == false);
-        cmdReceivedFlag = false;
-        if(receivedFrame->getPayload()[1] == 0){
-            Console::log("COMMS: No more GS commands-");
-            allRetrieved = true;
-        }else if(receivedFrame->getPayload()[2+2] == 99){
-            passFrame.setDestination(receivedFrame->getPayload()[2+0]);
-            passFrame.setPayloadSize(receivedFrame->getPayload()[2+1]);
-            passFrame.setSource(1);
-            for(int p = 0; p < passFrame.getPayloadSize(); p++){
-                passFrame.getPayload()[p] = receivedFrame->getPayload()[5+p];
-            }
-
-//            serial.print("Reply : ");
-//                       for(int x = 0; x < passFrame.getPayloadSize(); x++){
-//                           serial.print(passFrame.getPayload()[x], DEC);
-//                           serial.print(" ");
-//                       }
-//                       serial.println("");
-
-
-            pq9bus.transmit(passFrame);
-            while(cmdReceivedFlag == false);
-            cmdReceivedFlag = false;
-
-            passFrame.setDestination(4);
-            passFrame.setSource(1);
-            passFrame.setPayloadSize(receivedFrame->getPayloadSize()+6);
-            passFrame.getPayload()[0] = 20;
-            passFrame.getPayload()[1] = 3;
-            passFrame.getPayload()[2] = receivedFrame->getPayloadSize()+3;
-            for(int y = 0; y < receivedFrame->getPayloadSize()+3; y++){
-                passFrame.getPayload()[3+y] = receivedFrame->getFrame()[y];
-            }
-
-            pq9bus.transmit(passFrame);
-            while(cmdReceivedFlag == false);
-            cmdReceivedFlag = false;
-
-//            serial.print("  ===> Reply: ");
-//            serial.print(receivedFrame->getDestination(), DEC);
-//            serial.print(" ");
-//            serial.print(receivedFrame->getPayloadSize(), DEC);
-//            serial.print(" ");
-//            serial.print(receivedFrame->getSource(), DEC);
-//            serial.print(" ");
-//            for(int k = 0; k < receivedFrame->getPayloadSize(); k++){
-//                serial.print(receivedFrame->getPayload()[k], DEC);
-//                serial.print(" ");
-//            }
-//
-//            serial.println("");
-
-
-
-        }
-    }
-}
-
 void periodicTask()
 {
     // increase the timer, this happens every second
@@ -247,6 +77,8 @@ void periodicTask()
 //    pingModules();
 //
 //    retrieveCommCommandsReply();
+    unsigned int SDDetect = MAP_GPIO_getInputPinValue (GPIO_PORT_P2, GPIO_PIN4);
+    //Console::log("SD Detect: %d", SDDetect);
 
 }
 
@@ -268,11 +100,69 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
 
 }
 
+char CRC7Table[256] = {
+    0x00, 0x09, 0x12, 0x1B, 0x24, 0x2D, 0x36, 0x3F,
+    0x48, 0x41, 0x5A, 0x53, 0x6C, 0x65, 0x7E, 0x77,
+    0x19, 0x10, 0x0B, 0x02, 0x3D, 0x34, 0x2F, 0x26,
+    0x51, 0x58, 0x43, 0x4A, 0x75, 0x7C, 0x67, 0x6E,
+    0x32, 0x3B, 0x20, 0x29, 0x16, 0x1F, 0x04, 0x0D,
+    0x7A, 0x73, 0x68, 0x61, 0x5E, 0x57, 0x4C, 0x45,
+    0x2B, 0x22, 0x39, 0x30, 0x0F, 0x06, 0x1D, 0x14,
+    0x63, 0x6A, 0x71, 0x78, 0x47, 0x4E, 0x55, 0x5C,
+    0x64, 0x6D, 0x76, 0x7F, 0x40, 0x49, 0x52, 0x5B,
+    0x2C, 0x25, 0x3E, 0x37, 0x08, 0x01, 0x1A, 0x13,
+    0x7D, 0x74, 0x6F, 0x66, 0x59, 0x50, 0x4B, 0x42,
+    0x35, 0x3C, 0x27, 0x2E, 0x11, 0x18, 0x03, 0x0A,
+    0x56, 0x5F, 0x44, 0x4D, 0x72, 0x7B, 0x60, 0x69,
+    0x1E, 0x17, 0x0C, 0x05, 0x3A, 0x33, 0x28, 0x21,
+    0x4F, 0x46, 0x5D, 0x54, 0x6B, 0x62, 0x79, 0x70,
+    0x07, 0x0E, 0x15, 0x1C, 0x23, 0x2A, 0x31, 0x38,
+    0x41, 0x48, 0x53, 0x5A, 0x65, 0x6C, 0x77, 0x7E,
+    0x09, 0x00, 0x1B, 0x12, 0x2D, 0x24, 0x3F, 0x36,
+    0x58, 0x51, 0x4A, 0x43, 0x7C, 0x75, 0x6E, 0x67,
+    0x10, 0x19, 0x02, 0x0B, 0x34, 0x3D, 0x26, 0x2F,
+    0x73, 0x7A, 0x61, 0x68, 0x57, 0x5E, 0x45, 0x4C,
+    0x3B, 0x32, 0x29, 0x20, 0x1F, 0x16, 0x0D, 0x04,
+    0x6A, 0x63, 0x78, 0x71, 0x4E, 0x47, 0x5C, 0x55,
+    0x22, 0x2B, 0x30, 0x39, 0x06, 0x0F, 0x14, 0x1D,
+    0x25, 0x2C, 0x37, 0x3E, 0x01, 0x08, 0x13, 0x1A,
+    0x6D, 0x64, 0x7F, 0x76, 0x49, 0x40, 0x5B, 0x52,
+    0x3C, 0x35, 0x2E, 0x27, 0x18, 0x11, 0x0A, 0x03,
+    0x74, 0x7D, 0x66, 0x6F, 0x50, 0x59, 0x42, 0x4B,
+    0x17, 0x1E, 0x05, 0x0C, 0x33, 0x3A, 0x21, 0x28,
+    0x5F, 0x56, 0x4D, 0x44, 0x7B, 0x72, 0x69, 0x60,
+    0x0E, 0x07, 0x1C, 0x15, 0x2A, 0x23, 0x38, 0x31,
+    0x46, 0x4F, 0x54, 0x5D, 0x62, 0x6B, 0x70, 0x79
+};
+
+char appendCRC7(char CRC, char message_byte)
+{
+    return CRC7Table[(CRC << 1) ^ message_byte];
+}
+
+char getCRC7(char message[], int length)
+{
+  int i;
+  char CRC = 0;
+
+  for (i = 0; i < length; ++i)
+    CRC = appendCRC7(CRC, message[i]);
+
+  return CRC;
+}
+
+void delay(int ms){
+    uint32_t d =  ms * MAP_CS_getMCLK() / 1000;
+    for(uint32_t k = 0; k < d;  k++)
+    {
+        __asm("  nop");
+    }
+}
+
 /**
  * main.c
- */
-void main(void)
-{
+ */void main(void)
+ {
     // initialize the MCU:
     // - clock source
     // - clock tree
@@ -334,6 +224,53 @@ void main(void)
     if(HAS_SW_VERSION == 1){
         Console::log("SW_VERSION: %s", (const char*)xtr(SW_VERSION));
     }
+
+    Console::log("Configure SD-Card Pins");
+
+    //chip select
+    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN0);
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    //Sd On
+    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN5);
+    MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN5);
+    //sd detect
+    MAP_GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN4);
+
+    DSPI SPISD(1);
+    SPISD.initMaster(DSPI::MODE0, DSPI::MSBFirst, 300000);
+
+    Console::log("Dummy Clock >74 cycles");
+    for(int k = 0; k < 10;  k++)
+    {
+        SPISD.transfer(0xFF); //Write FF for HIGH DI (10 times = 80 cycles)
+    }
+
+    Console::log(" * Sending CMD0");
+    static char CMD_0[6] = {0x40, 0x00, 0x00, 0x00, 0x00, 0x95};
+//    Console::log(" #CMD0: %x %x %x %x %x %x", CMD_0[0],CMD_0[1],CMD_0[2],CMD_0[3],CMD_0[4],CMD_0[5]);
+
+    MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    delay(500);
+    Console::log("Enabling CS (GPIO Low)");
+
+
+    for(int q = 0; q < 6; q++){
+        SPISD.transfer(CMD_0[q]);
+    }
+
+    char CMD_0_reply_0 = SPISD.transfer(0xff);
+    char CMD_0_reply = SPISD.transfer(0xff);
+    while(CMD_0_reply == CMD_0_reply_0){
+        CMD_0_reply = SPISD.transfer(0xff);
+    }
+
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    Console::log("Disabled CS (GPIO High)");
+    Console::log(" * CMD0 Reply0: %d", CMD_0_reply_0);
+    Console::log(" * CMD0 Reply: %d", CMD_0_reply);
+
+    //Sd OFF
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN5 );
 
     TaskManager::start(tasks, 2);
 }
