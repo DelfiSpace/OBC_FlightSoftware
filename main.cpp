@@ -7,6 +7,7 @@ TMP100 temp(I2Cinternal, 0x48);
 
 // SPI bus
 DSPI spi(3);
+DSPI_A SPISD;
 MB85RS fram(spi, GPIO_PORT_P1, GPIO_PIN0 );
 
 // HardwareMonitor
@@ -151,11 +152,35 @@ char getCRC7(char message[], int length)
   return CRC;
 }
 
-void delay(int ms){
-    uint32_t d =  ms * MAP_CS_getMCLK() / 1000;
-    for(uint32_t k = 0; k < d;  k++)
-    {
-        __asm("  nop");
+
+uint8_t SDsendCmd(uint8_t cmdNumber, uint32_t payload){
+
+    char CMD[6] = {0x40 + cmdNumber, (uint8_t)(payload >> 24), (uint8_t)(payload >> 16), (uint8_t)(payload >> 8), (uint8_t)(payload), (uint8_t) 0};
+    CMD[5] = (getCRC7(CMD, 5) << 1) | 1;
+    Console::log(" #CMD: %x %x %x %x %x %x", CMD[0],CMD[1],CMD[2],CMD[3],CMD[4],CMD[5]);
+
+    for(int j = 0; j < 6; j++){
+        SPISD.transfer(CMD[j]);
+    }
+
+    uint8_t R1;
+    do {
+        R1 = SPISD.transfer(0xff);
+    } while ((R1 & 0x80) != 0);
+
+    return R1;
+}
+
+void SDwaitReady(){
+    uint8_t reply;
+    do {
+        reply = SPISD.transfer(0xff);
+    } while ((reply) != 0xff);
+}
+
+void SDgetArray(uint8_t Buff[], int size){
+    for(int k = 0; k < size; k++){
+        Buff[k] = SPISD.transfer(0xff);
     }
 }
 
@@ -232,45 +257,95 @@ void delay(int ms){
     MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
     //Sd On
     MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN5);
-    MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN5);
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN5);
     //sd detect
     MAP_GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN4);
 
-    DSPI SPISD(1);
-    SPISD.initMaster(DSPI::MODE0, DSPI::MSBFirst, 300000);
+    SPISD.initMaster(200000);
 
     Console::log("Dummy Clock >74 cycles");
-    for(int k = 0; k < 10;  k++)
+    for(int k = 0; k < 20;  k++)
     {
-        SPISD.transfer(0xFF); //Write FF for HIGH DI (10 times = 80 cycles)
+//        while (!(MAP_SPI_getInterruptStatus(EUSCI_A1_SPI_BASE, EUSCI_A_SPI_TRANSMIT_INTERRUPT )));
+//        MAP_SPI_transmitData(EUSCI_A1_SPI_BASE, 0xff);//Write FF for HIGH DI (10 times = 80 cycles)
+//        while (!(MAP_SPI_getInterruptStatus(EUSCI_A1_SPI_BASE, EUSCI_A_SPI_RECEIVE_INTERRUPT )));
+        SPISD.transfer(0xff);
     }
 
-    Console::log(" * Sending CMD0");
-    static char CMD_0[6] = {0x40, 0x00, 0x00, 0x00, 0x00, 0x95};
-//    Console::log(" #CMD0: %x %x %x %x %x %x", CMD_0[0],CMD_0[1],CMD_0[2],CMD_0[3],CMD_0[4],CMD_0[5]);
+    char R1 = 0;
+    char OCR[4] = {0};
+    Console::log("");
+    Console::log("=== SD Initialization Routine! ===");
+    //Routine based on : http://elm-chan.org/docs/mmc/mmc_e.html
+    // Specifically: http://elm-chan.org/docs/mmc/i/sdinit.png
 
+
+    //CMD0: Go to idle!
+    Console::log(" * Sending CMD0: Go to Idle");
     MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
-    delay(500);
-    Console::log("Enabling CS (GPIO Low)");
-
-
-    for(int q = 0; q < 6; q++){
-        SPISD.transfer(CMD_0[q]);
-    }
-
-    char CMD_0_reply_0 = SPISD.transfer(0xff);
-    char CMD_0_reply = SPISD.transfer(0xff);
-    while(CMD_0_reply == CMD_0_reply_0){
-        CMD_0_reply = SPISD.transfer(0xff);
-    }
-
+    SDwaitReady();
+    R1 = SDsendCmd(0,0);
     MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
-    Console::log("Disabled CS (GPIO High)");
-    Console::log(" * CMD0 Reply0: %d", CMD_0_reply_0);
-    Console::log(" * CMD0 Reply: %d", CMD_0_reply);
+    Console::log(" * R1: %x", R1);
+    Console::log("");
 
-    //Sd OFF
-    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN5 );
+    //CMD8: Check voltage range!
+    Console::log(" * Sending CMD8: Check voltage range");
+    MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    SDwaitReady();
+    R1 = SDsendCmd(8,0x1AA);
+    SDgetArray((uint8_t*)OCR, 4);
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    Console::log(" * R1: %x", R1);
+    Console::log(" * - R7: %x %x %x %x", OCR[0], OCR[1], OCR[2], OCR[3]);
+    Console::log("");
+
+    //ACMD41: Initiate initialization process!
+    Console::log(" * Sending ACMD41: Initiate initialization process");
+    MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    do {
+    SDwaitReady();
+    R1 = SDsendCmd(55,0);
+    Console::log(" * R1: %x", R1);
+    SDwaitReady();
+    R1 = SDsendCmd(41,0x40000000);
+    Console::log(" * R1: %x", R1);
+    } while (R1 != 0x00);
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    Console::log("");
+
+    //CMD58: Read OCR!
+    Console::log(" * Sending CMD58: Read OCR");
+    MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    SDwaitReady();
+    R1 = SDsendCmd(58,0);
+    SDgetArray((uint8_t*)OCR, 4);
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    Console::log(" * R1: %x", R1);
+    Console::log(" * OCR: %x %x %x %x", OCR[0], OCR[1], OCR[2], OCR[3]);
+    Console::log("");
+
+    //CMD10: Read CID!
+    uint8_t CID[17] = {0};
+    Console::log(" * Sending CMD10: Read CID");
+    MAP_GPIO_setOutputLowOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    SDwaitReady();
+    uint8_t R2_1 = SDsendCmd(10,0);
+    uint8_t R2_2;
+    SDgetArray(&R2_2, 1);
+    SDgetArray((uint8_t*)CID, 17);
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN0 );
+    Console::log(" * R2: %x %x", R2_1, R2_2);
+    Console::log(" * CID: %x %x %x %x", CID[0], CID[1], CID[2], CID[3]);
+    Console::log(" * CID: %x %x %x %x", CID[4], CID[5], CID[6], CID[7]);
+    Console::log(" * CID: %x %x %x %x", CID[8], CID[9], CID[10], CID[11]);
+    Console::log(" * CID: %x %x %x %x", CID[12], CID[13], CID[14], CID[15]);
+
+    //Data Sheet Table 3-9
+    Console::log(" * Manufacturer ID: %x", CID[1]);
+    Console::log(" * OEM/Application ID: %x %x", CID[1], CID[2]);
+    Console::log(" * Product Name: %c%c%c%c%c", CID[3], CID[4], CID[5], CID[6], CID[7]);
+    Console::log("");
 
     TaskManager::start(tasks, 2);
 }

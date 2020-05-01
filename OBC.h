@@ -29,6 +29,7 @@
 #include "HousekeepingService.h"
 #include "TMP100.h"
 #include "DSPI.h"
+#include "DSPI_A.h"
 #include "MB85RS.h"
 #include "TestService.h"
 #include "PeriodicTaskNotifier.h"
