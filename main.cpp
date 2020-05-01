@@ -343,8 +343,11 @@ void SDgetArray(uint8_t Buff[], int size){
 
     //Data Sheet Table 3-9
     Console::log(" * Manufacturer ID: %x", CID[1]);
-    Console::log(" * OEM/Application ID: %x %x", CID[1], CID[2]);
-    Console::log(" * Product Name: %c%c%c%c%c", CID[3], CID[4], CID[5], CID[6], CID[7]);
+    Console::log(" * OEM/Application ID: %x %x", CID[2], CID[3]);
+    Console::log(" * Product Name: %c%c%c%c%c", CID[4], CID[5], CID[6], CID[7], CID[8]);
+    Console::log(" * Product Revision: %d", CID[9]);
+    Console::log(" * Product Serial Number: %d", ( ((uint32_t)CID[10] << 24)|((uint32_t)CID[11] << 16)|((uint32_t)CID[12] << 8)|((uint32_t)CID[13]) ) );
+    Console::log(" * Manufacture Date: %x - %x", 0x2000 | ((CID[15]&0xf0) >> 4) | ((CID[14]&0x0f) << 4), (CID[15]&0x0f));
     Console::log("");
 
     TaskManager::start(tasks, 2);
