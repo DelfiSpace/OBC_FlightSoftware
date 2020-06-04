@@ -9,6 +9,7 @@
 
 #include "StateMachine.h"
 #include "OBCTelemetryContainer.h"
+#include "MB85RS.h"
 
 namespace activation{
 
