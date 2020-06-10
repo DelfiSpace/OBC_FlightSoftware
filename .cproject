@@ -119,6 +119,7 @@
 				<externalSettings containerId="TMP100;com.ti.ccstudio.buildDefinitions.MSP432.Debug.1175418372" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="DelfiPQcore;com.ti.ccstudio.buildDefinitions.MSP432.Debug.1175418372" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="MB85RS;com.ti.ccstudio.buildDefinitions.MSP432.Debug.693809774" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
+				<externalSettings containerId="SDCard;com.ti.ccstudio.buildDefinitions.MSP432.Debug.76521645" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="DSPI;com.ti.ccstudio.buildDefinitions.MSP432.Debug.2101333069" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 			</storageModule>
 		</cconfiguration>
@@ -156,6 +157,7 @@
 									<listOptionValue builtIn="false" value="${CCS_BASE_ROOT}/arm/include"/>
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/PQ9Bus"/>
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/DSPI"/>
+									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/SDCard"/>
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/MB85RS"/>
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/DWire"/>
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/DelfiPQcore"/>
@@ -206,6 +208,7 @@
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/MB85RS/${ConfigName}/MB85RS.lib"/>
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/DWire/${ConfigName}/DWire.lib"/>
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/DSPI/${ConfigName}/DSPI.lib"/>
+									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/SDCard/${ConfigName}/SDCard.lib"/>
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/DelfiPQcore/${ConfigName}/DelfiPQcore.lib"/>
 									<listOptionValue builtIn="false" value="${WORKSPACE_LOC}/INA226/${ConfigName}/INA226.lib"/>
 									<listOptionValue builtIn="false" value="${INHERITED_LIBRARIES}"/>
@@ -239,6 +242,7 @@
 				<externalSettings containerId="TMP100;com.ti.ccstudio.buildDefinitions.MSP432.Release.657703763" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="DelfiPQcore;com.ti.ccstudio.buildDefinitions.MSP432.Release.657703763" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="MB85RS;com.ti.ccstudio.buildDefinitions.MSP432.Release.1876856181" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
+				<externalSettings containerId="SDCard;com.ti.ccstudio.buildDefinitions.MSP432.Release.1876856181" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 				<externalSettings containerId="DSPI;com.ti.ccstudio.buildDefinitions.MSP432.Release.1504546256" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
 			</storageModule>
 		</cconfiguration>

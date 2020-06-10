@@ -29,12 +29,13 @@
 #include "HousekeepingService.h"
 #include "TMP100.h"
 #include "DSPI.h"
-#include "DSPI_A.h"
 #include "MB85RS.h"
 #include "TestService.h"
 #include "PeriodicTaskNotifier.h"
 #include "HWMonitor.h"
 #include "ADCManager.h"
+#include "DSPI_A.h"
+#include "SDCard.h"
 
 #define FCLOCK 48000000
 
