@@ -179,58 +179,7 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
     SPISD.initMaster(200000);
 
     SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
-
-    Console::log("Dummy Clock >74 cycles");
-    sdcard.sendDummy();
-
-    char R1 = 0;
-    char OCR[4] = {0};
-    Console::log("");
-    Console::log("=== SD Initialization Routine! ===");
-    //Routine based on : http://elm-chan.org/docs/mmc/mmc_e.html
-    // Specifically: http://elm-chan.org/docs/mmc/i/sdinit.png
-
-
-    //CMD0: Go to idle!
-    Console::log(" * Sending CMD0: Go to Idle");
-    sdcard.select();
-    R1 = sdcard.sendCmd(0,0);
-    sdcard.unselect();
-    Console::log(" * R1: %x", R1);
-    Console::log("");
-
-    //CMD8: Check voltage range!
-    Console::log(" * Sending CMD8: Check voltage range");
-    sdcard.select();
-    R1 = sdcard.sendCmd(8,0x1AA);
-    sdcard.getArray((uint8_t*)OCR, 4);
-    sdcard.unselect();
-
-    Console::log(" * R1: %x", R1);
-    Console::log(" * - R7: %x %x %x %x", OCR[0], OCR[1], OCR[2], OCR[3]);
-    Console::log("");
-
-    //ACMD41: Initiate initialization process!
-    Console::log(" * Sending ACMD41: Initiate initialization process");
-    sdcard.select();
-    do {
-    R1 = sdcard.sendCmd(55,0);
-    //Console::log(" * R1: %x", R1);
-    R1 = sdcard.sendCmd(41,0x40000000);
-    //Console::log(" * R1: %x", R1);
-    } while (R1 != 0x00);
-    sdcard.unselect();
-    //Console::log("");
-
-    //CMD58: Read OCR!
-    Console::log(" * Sending CMD58: Read OCR");
-    sdcard.select();
-    R1 = sdcard.sendCmd(58,0);
-    sdcard.getArray((uint8_t*)OCR, 4);
-    sdcard.unselect();
-    Console::log(" * R1: %x", R1);
-    Console::log(" * OCR: %x %x %x %x", OCR[0], OCR[1], OCR[2], OCR[3]);
-    Console::log("");
+    sdcard.init();
 
     //CMD10: Read CID!
     uint8_t CID[17] = {0};
