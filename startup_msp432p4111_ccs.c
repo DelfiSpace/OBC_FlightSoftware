@@ -52,7 +52,7 @@ extern void Reset_Handler       (void) __attribute__((weak));
 
 /* Cortex-M4 Processor Exceptions */
 extern void NMI_Handler         (void) __attribute__((weak, alias("Default_Handler")));
-extern void HardFault_Handler   (void) __attribute__((weak, alias("Default_Handler")));
+extern void HardFault_Handler   (void) __attribute__((weak, alias("Grab_Handler")));
 extern void MemManage_Handler   (void) __attribute__((weak, alias("Default_Handler")));
 extern void BusFault_Handler    (void) __attribute__((weak, alias("Default_Handler")));
 extern void UsageFault_Handler  (void) __attribute__((weak, alias("Default_Handler")));
@@ -198,11 +198,18 @@ void Default_Handler(void)
     /* Fault trap exempt from ULP advisor */
     #pragma diag_push
     #pragma CHECK_ULP("-2.1")
-
 	/* Enter an infinite loop. */
 	while(1)
 	{
 	}
 
 	#pragma diag_pop
+}
+
+void Grab_Handler(void)
+{
+    while(1)
+    {
+    }
+
 }

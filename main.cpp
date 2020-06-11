@@ -176,6 +176,11 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
     //sd detect
     //MAP_GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN4);
 
+    //DISABLE TIMER32 IE
+    Timer32_disableInterrupt(TIMER32_0_BASE);
+    Timer32_disableInterrupt(TIMER32_1_BASE);
+
+
     DSPI_A SPISD;
     SPISD.initMaster(200000);
 
