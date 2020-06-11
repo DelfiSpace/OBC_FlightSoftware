@@ -36,6 +36,7 @@
 #include "ADCManager.h"
 #include "DSPI_A.h"
 #include "SDCard.h"
+#include "LittleFS.h"
 
 #define FCLOCK 48000000
 

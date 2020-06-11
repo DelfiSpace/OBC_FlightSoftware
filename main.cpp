@@ -101,6 +101,7 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
 
 }
 
+
 /**
  * main.c
  */void main(void)
@@ -110,56 +111,56 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
     // - clock tree
     DelfiPQcore::initMCU();
 
-    // initialize the ADC
-    // - ADC14 and FPU Module
-    // - MEM0 for internal temperature measurements
-    ADCManager::initADC();
-
-    // Initialize I2C master
-    I2Cinternal.setFastMode();
-    I2Cinternal.begin();
-
-    // Initialize SPI master
-    spi.initMaster(DSPI::MODE0, DSPI::MSBFirst, 1000000);
-    fram.init();
-
-    // initialize the shunt resistor
-    powerBus.setShuntResistor(40);
-
-    // initialize temperature sensor
-    temp.init();
-
-    // initialize the console
+//    // initialize the ADC
+//    // - ADC14 and FPU Module
+//    // - MEM0 for internal temperature measurements
+//    ADCManager::initADC();
+//
+//    // Initialize I2C master
+//    I2Cinternal.setFastMode();
+//    I2Cinternal.begin();
+//
+//    // Initialize SPI master
+//    spi.initMaster(DSPI::MODE0, DSPI::MSBFirst, 1000000);
+//    fram.init();
+//
+//    // initialize the shunt resistor
+//    powerBus.setShuntResistor(40);
+//
+//    // initialize temperature sensor
+//    temp.init();
+//
+//    // initialize the console
     Console::init( 115200 );                        // baud rate: 9600 bps
-    pq9bus.begin(115200, 1);     // baud rate: 115200 bps
-                                            // address OBC (1)
-
-    //InitBootLoader!
-    bootLoader.JumpSlot();
-
-    // initialize the reset handler:
-    // - prepare the watch-dog
-    // - initialize the pins for the hardware watch-dog
-    // - prepare the pin for power cycling the system
-    reset.init();
-
-    // initialize Task Notifier
-    taskNotifier.init();
-
-    // initialize HWMonitor readings
-    hwMonitor.readResetStatus();
-    hwMonitor.readCSStatus();
-
-    // link the command handler to the PQ9 bus:
-    // every time a new command is received, it will be forwarded to the command handler
-    // TODO: put back the lambda function after bug in CCS has been fixed
-    pq9bus.setReceiveHandler([](DataFrame &newFrame){ cmdHandler.received(newFrame); });
-    //pq9bus.setReceiveHandler(&receivedCommand);
-
-    // every time a command is correctly processed, call the watch-dog
-    // TODO: put back the lambda function after bug in CCS has been fixed
-    cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
-    //cmdHandler.onValidCommand(&validCmd);
+//    pq9bus.begin(115200, 1);     // baud rate: 115200 bps
+//                                            // address OBC (1)
+//
+//    //InitBootLoader!
+//    bootLoader.JumpSlot();
+//
+//    // initialize the reset handler:
+//    // - prepare the watch-dog
+//    // - initialize the pins for the hardware watch-dog
+//    // - prepare the pin for power cycling the system
+//    reset.init();
+//
+//    // initialize Task Notifier
+//    taskNotifier.init();
+//
+//    // initialize HWMonitor readings
+//    hwMonitor.readResetStatus();
+//    hwMonitor.readCSStatus();
+//
+//    // link the command handler to the PQ9 bus:
+//    // every time a new command is received, it will be forwarded to the command handler
+//    // TODO: put back the lambda function after bug in CCS has been fixed
+//    pq9bus.setReceiveHandler([](DataFrame &newFrame){ cmdHandler.received(newFrame); });
+//    //pq9bus.setReceiveHandler(&receivedCommand);
+//
+//    // every time a command is correctly processed, call the watch-dog
+//    // TODO: put back the lambda function after bug in CCS has been fixed
+//    cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
+//    //cmdHandler.onValidCommand(&validCmd);
 
     Console::log("OBC booting...SLOT: %d", (int) Bootloader::getCurrentSlot());
 
@@ -204,6 +205,43 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
     Console::log(" * Product Serial Number: %d", ( ((uint32_t)CID[10] << 24)|((uint32_t)CID[11] << 16)|((uint32_t)CID[12] << 8)|((uint32_t)CID[13]) ) );
     Console::log(" * Manufacture Date: %x - %x", 0x2000 | ((CID[15]&0xf0) >> 4) | ((CID[14]&0x0f) << 4), (CID[15]&0x0f));
     Console::log("");
+
+    //SD Card BootCounter Test!
+    Console::log("Creating FS Object");
+    LittleFS fs;
+    int err = fs.mount(&sdcard);
+    if(err < 0){
+        Console::log("Mounting SD Card - Error Code: -%d", -err);
+    }else{
+        Console::log("Mounting SD Card - Error Code: %d", err);
+    }
+//    uint8_t coolBuf[512];
+//    const char progBuf[5] = {"yolo"};
+//    int a = sdcard.read(coolBuf, 512, 512);
+//    Console::log("READ -%d", -a);
+//    a = sdcard.program(progBuf, 0, 5);
+//    Console::log("PROG -%d", -a);
+//    a = sdcard.trim(0, 5);
+//    Console::log("TRIM -%d", -a);
+//    a = sdcard.get_read_size();
+//    Console::log("READSize %d", a);
+//    a = sdcard.get_program_size();
+//    Console::log("PROGSize %d", a);
+//    a = sdcard.size();
+//    Console::log("Size %d", a);
+//    a = sdcard.frequency(400000);
+//    Console::log("Freq %d", a);
+
+    err = fs.format();
+//    if(err){
+//        err = fs.format();
+//        if(err < 0){
+//            Console::log("Format SD Card - Error Code: -%d", -err);
+//        }else{
+//            Console::log("Format SD Card - Error Code: %d", err);
+//        }
+//    }
+
 
     TaskManager::start(tasks, 2);
 }
