@@ -208,91 +208,39 @@ int sd_sync(const struct lfs_config *c){
     int err = sdcard.init();
     Console::log("SDCard Init: %d",err);
 
-//    //CMD10: Read CID!
-//    uint8_t CID[17] = {0};
-//    Console::log(" * Sending CMD10: Read CID");
-//    sdcard.select();
-//    uint8_t R2_1 = sdcard.sendCmd(10,0);
-//    uint8_t R2_2;
-//    sdcard.getArray(&R2_2, 1);
-//    sdcard.getArray((uint8_t*)CID, 17);
-//    sdcard.unselect();
-//    Console::log(" * R2: %x %x", R2_1, R2_2);
-//    Console::log(" * CID: %x %x %x %x", CID[0], CID[1], CID[2], CID[3]);
-//    Console::log(" * CID: %x %x %x %x", CID[4], CID[5], CID[6], CID[7]);
-//    Console::log(" * CID: %x %x %x %x", CID[8], CID[9], CID[10], CID[11]);
-//    Console::log(" * CID: %x %x %x %x", CID[12], CID[13], CID[14], CID[15]);
-//
-//    //Data Sheet Table 3-9
-//    Console::log(" * Manufacturer ID: %x", CID[1]);
-//    Console::log(" * OEM/Application ID: %x %x", CID[2], CID[3]);
-//    Console::log(" * Product Name: %c%c%c%c%c", CID[4], CID[5], CID[6], CID[7], CID[8]);
-//    Console::log(" * Product Revision: %d", CID[9]);
-//    Console::log(" * Product Serial Number: %d", ( ((uint32_t)CID[10] << 24)|((uint32_t)CID[11] << 16)|((uint32_t)CID[12] << 8)|((uint32_t)CID[13]) ) );
-//    Console::log(" * Manufacture Date: %x - %x", 0x2000 | ((CID[15]&0xf0) >> 4) | ((CID[14]&0x0f) << 4), (CID[15]&0x0f));
-//    Console::log("");
-
     //SD Card BootCounter Test!
 
     // variables used by the filesystem
-    lfs_t lfs;
+    LittleFS fs;
     lfs_file_t file;
 
-    // configuration of the filesystem is provided by this struct
-    struct lfs_config cfg;
-    cfg.read  = &sd_read;
-    cfg.prog  = &sd_prog;
-    cfg.erase = &sd_erase;
-    cfg.sync  = &sd_sync;
-
-    // block device configuration
-    cfg.read_size = 512;
-    cfg.prog_size = 512;
-    cfg.block_size = 512;
-    cfg.block_count = sdcard.size()/512;
-    cfg.cache_size = 1*cfg.read_size;
-    cfg.lookahead_size = 64;
-    cfg.block_cycles = 500;
-
-    //static buffer config
-    uint8_t read_buffer[512];
-    uint8_t prog_buffer[512];
-    uint8_t lkah_buffer[512];
-    cfg.read_buffer = read_buffer;
-    cfg.prog_buffer = prog_buffer;
-    cfg.lookahead_buffer = lkah_buffer;
-
-    //Initialize with 0, to avoid some random value sitting there.
-    cfg.name_max = 0;
-    cfg.file_max = 0;
-    cfg.attr_max = 0;
-
-
     // mount the filesystem
-    err = lfs_mount(&lfs, &cfg);
+    err = fs.mount(&sdcard);
 
     // reformat if we can't mount the filesystem
     // this should only happen on the first boot
     if (err) {
-        lfs_format(&lfs, &cfg);
-        lfs_mount(&lfs, &cfg);
+        fs.format();
+        fs.mount(&sdcard);
     }
 
     // read current count
     uint32_t boot_count = 0;
-    lfs_file_open(&lfs, &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
-    lfs_file_read(&lfs, &file, &boot_count, sizeof(boot_count));
+    fs.file_open(&file, "booter", LFS_O_RDWR | LFS_O_CREAT);
+    fs.file_read(&file, &boot_count, sizeof(boot_count));
 
     // update boot count
     boot_count += 1;
-    lfs_file_rewind(&lfs, &file);
-    lfs_file_write(&lfs, &file, &boot_count, sizeof(boot_count));
+
+    //rewind back to the beginning of the file with Seek
+    fs.file_seek(&file, 0, 0);
+    fs.file_write(&file, &boot_count, sizeof(boot_count));
 
     // remember the storage is not updated until the file is closed successfully
-    lfs_file_close(&lfs, &file);
+    fs.file_close(&file);
 
     // release any resources we were using
-    lfs_unmount(&lfs);
+    fs.unmount();
 
     // print the boot count
     Console::log("boot_count: %d\n", boot_count);
