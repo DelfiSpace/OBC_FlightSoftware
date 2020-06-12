@@ -101,6 +101,34 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
 
 }
 
+DSPI_A SPISD;
+SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
+
+int sd_read(const struct lfs_config *c, lfs_block_t block,
+        lfs_off_t off, void *buffer, lfs_size_t size){
+    return sdcard.read(buffer, (uint64_t)block * 512 + off, size);
+}
+
+// Program a region in a block. The block must have previously
+// been erased. Negative error codes are propogated to the user.
+// May return LFS_ERR_CORRUPT if the block should be considered bad.
+int sd_prog(const struct lfs_config *c, lfs_block_t block,
+            lfs_off_t off, const void *buffer, lfs_size_t size){
+    return sdcard.program(buffer, (uint64_t)block * 512 + off, size);
+}
+
+// Erase a block. A block must be erased before being programmed.
+// The state of an erased block is undefined. Negative error codes
+// are propogated to the user.
+// May return LFS_ERR_CORRUPT if the block should be considered bad.
+int sd_erase(const struct lfs_config *c, lfs_block_t block){
+    return sdcard.erase((uint64_t)block * 512, 512);
+}
+// Sync the state of the underlying block device. Negative error codes
+// are propogated to the user.
+int sd_sync(const struct lfs_config *c){
+    return sdcard.sync();
+}
 
 /**
  * main.c
@@ -180,73 +208,98 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
     Timer32_disableInterrupt(TIMER32_0_BASE);
     Timer32_disableInterrupt(TIMER32_1_BASE);
 
-
-    DSPI_A SPISD;
     SPISD.initMaster(200000);
+    int err = sdcard.init();
+    Console::log("SDCard Init: %d",err);
 
-    SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
-    sdcard.init();
-
-    //CMD10: Read CID!
-    uint8_t CID[17] = {0};
-    Console::log(" * Sending CMD10: Read CID");
-    sdcard.select();
-    uint8_t R2_1 = sdcard.sendCmd(10,0);
-    uint8_t R2_2;
-    sdcard.getArray(&R2_2, 1);
-    sdcard.getArray((uint8_t*)CID, 17);
-    sdcard.unselect();
-    Console::log(" * R2: %x %x", R2_1, R2_2);
-    Console::log(" * CID: %x %x %x %x", CID[0], CID[1], CID[2], CID[3]);
-    Console::log(" * CID: %x %x %x %x", CID[4], CID[5], CID[6], CID[7]);
-    Console::log(" * CID: %x %x %x %x", CID[8], CID[9], CID[10], CID[11]);
-    Console::log(" * CID: %x %x %x %x", CID[12], CID[13], CID[14], CID[15]);
-
-    //Data Sheet Table 3-9
-    Console::log(" * Manufacturer ID: %x", CID[1]);
-    Console::log(" * OEM/Application ID: %x %x", CID[2], CID[3]);
-    Console::log(" * Product Name: %c%c%c%c%c", CID[4], CID[5], CID[6], CID[7], CID[8]);
-    Console::log(" * Product Revision: %d", CID[9]);
-    Console::log(" * Product Serial Number: %d", ( ((uint32_t)CID[10] << 24)|((uint32_t)CID[11] << 16)|((uint32_t)CID[12] << 8)|((uint32_t)CID[13]) ) );
-    Console::log(" * Manufacture Date: %x - %x", 0x2000 | ((CID[15]&0xf0) >> 4) | ((CID[14]&0x0f) << 4), (CID[15]&0x0f));
-    Console::log("");
+//    //CMD10: Read CID!
+//    uint8_t CID[17] = {0};
+//    Console::log(" * Sending CMD10: Read CID");
+//    sdcard.select();
+//    uint8_t R2_1 = sdcard.sendCmd(10,0);
+//    uint8_t R2_2;
+//    sdcard.getArray(&R2_2, 1);
+//    sdcard.getArray((uint8_t*)CID, 17);
+//    sdcard.unselect();
+//    Console::log(" * R2: %x %x", R2_1, R2_2);
+//    Console::log(" * CID: %x %x %x %x", CID[0], CID[1], CID[2], CID[3]);
+//    Console::log(" * CID: %x %x %x %x", CID[4], CID[5], CID[6], CID[7]);
+//    Console::log(" * CID: %x %x %x %x", CID[8], CID[9], CID[10], CID[11]);
+//    Console::log(" * CID: %x %x %x %x", CID[12], CID[13], CID[14], CID[15]);
+//
+//    //Data Sheet Table 3-9
+//    Console::log(" * Manufacturer ID: %x", CID[1]);
+//    Console::log(" * OEM/Application ID: %x %x", CID[2], CID[3]);
+//    Console::log(" * Product Name: %c%c%c%c%c", CID[4], CID[5], CID[6], CID[7], CID[8]);
+//    Console::log(" * Product Revision: %d", CID[9]);
+//    Console::log(" * Product Serial Number: %d", ( ((uint32_t)CID[10] << 24)|((uint32_t)CID[11] << 16)|((uint32_t)CID[12] << 8)|((uint32_t)CID[13]) ) );
+//    Console::log(" * Manufacture Date: %x - %x", 0x2000 | ((CID[15]&0xf0) >> 4) | ((CID[14]&0x0f) << 4), (CID[15]&0x0f));
+//    Console::log("");
 
     //SD Card BootCounter Test!
-    Console::log("Creating FS Object");
-    LittleFS fs;
-    int err = fs.mount(&sdcard);
-    if(err < 0){
-        Console::log("Mounting SD Card - Error Code: -%d", -err);
-    }else{
-        Console::log("Mounting SD Card - Error Code: %d", err);
+
+    // variables used by the filesystem
+    lfs_t lfs;
+    lfs_file_t file;
+
+    // configuration of the filesystem is provided by this struct
+    struct lfs_config cfg;
+    cfg.read  = &sd_read;
+    cfg.prog  = &sd_prog;
+    cfg.erase = &sd_erase;
+    cfg.sync  = &sd_sync;
+
+    // block device configuration
+    cfg.read_size = 512;
+    cfg.prog_size = 512;
+    cfg.block_size = 512;
+    cfg.block_count = sdcard.size()/512;
+    cfg.cache_size = 1*cfg.read_size;
+    cfg.lookahead_size = 64;
+    cfg.block_cycles = 500;
+
+    //static buffer config
+    uint8_t read_buffer[512];
+    uint8_t prog_buffer[512];
+    uint8_t lkah_buffer[512];
+    cfg.read_buffer = read_buffer;
+    cfg.prog_buffer = prog_buffer;
+    cfg.lookahead_buffer = lkah_buffer;
+
+    //Initialize with 0, to avoid some random value sitting there.
+    cfg.name_max = 0;
+    cfg.file_max = 0;
+    cfg.attr_max = 0;
+
+
+    // mount the filesystem
+    err = lfs_mount(&lfs, &cfg);
+
+    // reformat if we can't mount the filesystem
+    // this should only happen on the first boot
+    if (err) {
+        lfs_format(&lfs, &cfg);
+        lfs_mount(&lfs, &cfg);
     }
-//    uint8_t coolBuf[512];
-//    const char progBuf[5] = {"yolo"};
-//    int a = sdcard.read(coolBuf, 512, 512);
-//    Console::log("READ -%d", -a);
-//    a = sdcard.program(progBuf, 0, 5);
-//    Console::log("PROG -%d", -a);
-//    a = sdcard.trim(0, 5);
-//    Console::log("TRIM -%d", -a);
-//    a = sdcard.get_read_size();
-//    Console::log("READSize %d", a);
-//    a = sdcard.get_program_size();
-//    Console::log("PROGSize %d", a);
-//    a = sdcard.size();
-//    Console::log("Size %d", a);
-//    a = sdcard.frequency(400000);
-//    Console::log("Freq %d", a);
 
-    err = fs.format();
-//    if(err){
-//        err = fs.format();
-//        if(err < 0){
-//            Console::log("Format SD Card - Error Code: -%d", -err);
-//        }else{
-//            Console::log("Format SD Card - Error Code: %d", err);
-//        }
-//    }
+    // read current count
+    uint32_t boot_count = 0;
+    lfs_file_open(&lfs, &file, "boot_count", LFS_O_RDWR | LFS_O_CREAT);
+    lfs_file_read(&lfs, &file, &boot_count, sizeof(boot_count));
 
+    // update boot count
+    boot_count += 1;
+    lfs_file_rewind(&lfs, &file);
+    lfs_file_write(&lfs, &file, &boot_count, sizeof(boot_count));
+
+    // remember the storage is not updated until the file is closed successfully
+    lfs_file_close(&lfs, &file);
+
+    // release any resources we were using
+    lfs_unmount(&lfs);
+
+    // print the boot count
+    Console::log("boot_count: %d\n", boot_count);
 
     TaskManager::start(tasks, 2);
 }
