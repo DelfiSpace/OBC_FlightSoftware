@@ -139,56 +139,56 @@ int sd_sync(const struct lfs_config *c){
     // - clock tree
     DelfiPQcore::initMCU();
 
-//    // initialize the ADC
-//    // - ADC14 and FPU Module
-//    // - MEM0 for internal temperature measurements
-//    ADCManager::initADC();
-//
-//    // Initialize I2C master
-//    I2Cinternal.setFastMode();
-//    I2Cinternal.begin();
-//
-//    // Initialize SPI master
-//    spi.initMaster(DSPI::MODE0, DSPI::MSBFirst, 1000000);
-//    fram.init();
-//
-//    // initialize the shunt resistor
-//    powerBus.setShuntResistor(40);
-//
-//    // initialize temperature sensor
-//    temp.init();
-//
-//    // initialize the console
+    // initialize the ADC
+    // - ADC14 and FPU Module
+    // - MEM0 for internal temperature measurements
+    ADCManager::initADC();
+
+    // Initialize I2C master
+    I2Cinternal.setFastMode();
+    I2Cinternal.begin();
+
+    // Initialize SPI master
+    spi.initMaster(DSPI::MODE0, DSPI::MSBFirst, 1000000);
+    fram.init();
+
+    // initialize the shunt resistor
+    powerBus.setShuntResistor(40);
+
+    // initialize temperature sensor
+    temp.init();
+
+    // initialize the console
     Console::init( 115200 );                        // baud rate: 9600 bps
-//    pq9bus.begin(115200, 1);     // baud rate: 115200 bps
-//                                            // address OBC (1)
-//
-//    //InitBootLoader!
-//    bootLoader.JumpSlot();
-//
-//    // initialize the reset handler:
-//    // - prepare the watch-dog
-//    // - initialize the pins for the hardware watch-dog
-//    // - prepare the pin for power cycling the system
-//    reset.init();
-//
-//    // initialize Task Notifier
-//    taskNotifier.init();
-//
-//    // initialize HWMonitor readings
-//    hwMonitor.readResetStatus();
-//    hwMonitor.readCSStatus();
-//
-//    // link the command handler to the PQ9 bus:
-//    // every time a new command is received, it will be forwarded to the command handler
-//    // TODO: put back the lambda function after bug in CCS has been fixed
-//    pq9bus.setReceiveHandler([](DataFrame &newFrame){ cmdHandler.received(newFrame); });
-//    //pq9bus.setReceiveHandler(&receivedCommand);
-//
-//    // every time a command is correctly processed, call the watch-dog
-//    // TODO: put back the lambda function after bug in CCS has been fixed
-//    cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
-//    //cmdHandler.onValidCommand(&validCmd);
+    pq9bus.begin(115200, 1);     // baud rate: 115200 bps
+                                            // address OBC (1)
+
+    //InitBootLoader!
+    bootLoader.JumpSlot();
+
+    // initialize the reset handler:
+    // - prepare the watch-dog
+    // - initialize the pins for the hardware watch-dog
+    // - prepare the pin for power cycling the system
+    reset.init();
+
+    // initialize Task Notifier
+    taskNotifier.init();
+
+    // initialize HWMonitor readings
+    hwMonitor.readResetStatus();
+    hwMonitor.readCSStatus();
+
+    // link the command handler to the PQ9 bus:
+    // every time a new command is received, it will be forwarded to the command handler
+    // TODO: put back the lambda function after bug in CCS has been fixed
+    pq9bus.setReceiveHandler([](DataFrame &newFrame){ cmdHandler.received(newFrame); });
+    //pq9bus.setReceiveHandler(&receivedCommand);
+
+    // every time a command is correctly processed, call the watch-dog
+    // TODO: put back the lambda function after bug in CCS has been fixed
+    cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
+    //cmdHandler.onValidCommand(&validCmd);
 
     Console::log("OBC booting...SLOT: %d", (int) Bootloader::getCurrentSlot());
 
@@ -202,11 +202,7 @@ int sd_sync(const struct lfs_config *c){
     MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN5);
     MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN5);
     //sd detect
-    //MAP_GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN4);
-
-    //DISABLE TIMER32 IE
-    Timer32_disableInterrupt(TIMER32_0_BASE);
-    Timer32_disableInterrupt(TIMER32_1_BASE);
+    MAP_GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN4);
 
     SPISD.initMaster(200000);
     int err = sdcard.init();
