@@ -104,32 +104,6 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
 DSPI_A SPISD;
 SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
 
-int sd_read(const struct lfs_config *c, lfs_block_t block,
-        lfs_off_t off, void *buffer, lfs_size_t size){
-    return sdcard.read(buffer, (uint64_t)block * 512 + off, size);
-}
-
-// Program a region in a block. The block must have previously
-// been erased. Negative error codes are propogated to the user.
-// May return LFS_ERR_CORRUPT if the block should be considered bad.
-int sd_prog(const struct lfs_config *c, lfs_block_t block,
-            lfs_off_t off, const void *buffer, lfs_size_t size){
-    return sdcard.program(buffer, (uint64_t)block * 512 + off, size);
-}
-
-// Erase a block. A block must be erased before being programmed.
-// The state of an erased block is undefined. Negative error codes
-// are propogated to the user.
-// May return LFS_ERR_CORRUPT if the block should be considered bad.
-int sd_erase(const struct lfs_config *c, lfs_block_t block){
-    return sdcard.erase((uint64_t)block * 512, 512);
-}
-// Sync the state of the underlying block device. Negative error codes
-// are propogated to the user.
-int sd_sync(const struct lfs_config *c){
-    return sdcard.sync();
-}
-
 /**
  * main.c
  */void main(void)
@@ -220,8 +194,9 @@ int sd_sync(const struct lfs_config *c){
     // reformat if we can't mount the filesystem
     // this should only happen on the first boot
     if (err) {
-        fs.format();
+        fs.format(&sdcard);
         fs.mount(&sdcard);
+        Console::log("formatted.");
     }
 
     // read current count
