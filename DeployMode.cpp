@@ -7,6 +7,10 @@
 
 #include <DeployMode.h>
 
+void Deploy() {
+    Console::log("Sending command to ADB.");
+}
+
 bool CheckDeploy(DeployState CurrentState) {
     if(CurrentState == DEPLOYED)
         return true;
