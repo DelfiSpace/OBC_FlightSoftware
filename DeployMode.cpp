@@ -23,49 +23,49 @@ bool CheckDeployTelem() {
     return true;
 }
 
-void DeployAntenna(DeployState CurrentState, long uptime, long endtime) {
+void DeployAntenna(OBCDataContainer *container, DeployState CurrentState, long uptime, long endtime) {
     if((CurrentState == NORMAL) & (uptime < endtime)) {
-        if (DC.getBatteryVoltage() > DC.getDeployVoltage()) {
+        if (container->getBatteryVoltage() > container->getDeployVoltage()) {
             //command ADB to deploy antenna
-            DC.setMode(SAFE);
-            DC.setDeployState(DELAYING); //why????
+            container->setMode(SAFE);
+            container->setDeployState(DELAYING); //why????
             //I think we need to add an extra variable for the end of delay time
-            DC.setDeployDelayTime(uptime + DC.getDeployDelayParameter());
+            container->setDeployDelayTime(uptime + container->getDeployDelayParameter());
         }
     }
     else if((CurrentState == NORMAL) & (uptime >= endtime)) {
-        DC.setDeployState(FORCED);
-        DC.setDeployDelayTime(uptime + DC.getDeployDelayParameter());
+        container->setDeployState(FORCED);
+        container->setDeployDelayTime(uptime + container->getDeployDelayParameter());
     }
 //    else if(CurrentState == FORCED) {
 //        //command ADB to deploy
-//        DC.setDeployState(DELAYING);
+//        container.setDeployState(DELAYING);
 //
 //    }
-    else if((CurrentState == FORCED) & (uptime < DC.getDeployDelayTime())) {
+    else if((CurrentState == FORCED) & (uptime < container->getDeployDelayTime())) {
         return;
     }
-    else if((CurrentState == FORCED) & (uptime >= DC.getDeployDelayTime())) {
+    else if((CurrentState == FORCED) & (uptime >= container->getDeployDelayTime())) {
         //Command ADB to deploy
-        DC.setMode(SAFE);
-        DC.setDeployState(NORMAL);
+        container->setMode(SAFE);
+        container->setDeployState(NORMAL);
     }
     return;
 }
 
-void DeployMode () {
+void DeployMode (OBCDataContainer *container) {
     //Here I save it in a variable to avoid consecutive calls to the same function
-    DeployState CurrentState = DC.getDeployState();
-    long UpTime = DC.getTotalUpTime();
-    long EndTime = DC.getEndOfDeployState();
+    DeployState CurrentState = container->getDeployState();
+    long UpTime = container->getTotalUpTime();
+    long EndTime = container->getEndOfDeployState();
     if (CheckDeploy(CurrentState) && CheckDeployTelem()) {
-        DC.setMode(SAFE);
+        container->setMode(SAFE);
         //add deployment done to database
-        DC.setDeployState(DEPLOYED);
+        container->setDeployState(DEPLOYED);
         return;
     }
     else
-        DeployAntenna(CurrentState,UpTime,EndTime);
+        DeployAntenna(container,CurrentState,UpTime,EndTime);
 }
 
 
