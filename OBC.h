@@ -13,6 +13,7 @@
 #include "SoftwareUpdateService.h"
 #include "Bootloader.h"
 #include "OBCTelemetryContainer.h"
+#include "OBCDataContainer.h"
 #include "msp.h"
 #include "DelfiPQcore.h"
 #include "PQ9Bus.h"
@@ -34,10 +35,12 @@
 #include "PeriodicTaskNotifier.h"
 #include "HWMonitor.h"
 #include "ADCManager.h"
+#include "StateMachine.h"
 
 #define FCLOCK 48000000
 
 #define ADCS_ADDRESS     5
+
 
 // callback functions
 void acquireTelemetry(OBCTelemetryContainer *tc);

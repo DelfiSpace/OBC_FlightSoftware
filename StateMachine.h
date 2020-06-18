@@ -11,7 +11,10 @@
 
 #include "Task.h"
 #include "OBCDataContainer.h"
+#include "ActivationMode.h"
 #include "DeployMode.h"
+
+#define DEBUG 1
 
 class StateMachine : public Task
 {
@@ -23,13 +26,14 @@ private:
     OBCDataContainer * containerPointer;
 
 protected:
-    void run();
+
 
 public:
     StateMachine(OBCDataContainer *container) :
         Task(), containerPointer(container) {};
     bool notified( void );
     void setUp();
+    void run();
 };
 
 #endif /* STATEMACHINE_H_ */

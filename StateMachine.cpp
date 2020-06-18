@@ -9,9 +9,7 @@
 #define STATEMACHINE_CPP_
 
 #include "StateMachine.h"
-//#include "ActivationMode.h"
 #include "Console.h"
-
 /**
  *
  *   Define which state it should be and call relative functions.
@@ -26,21 +24,39 @@ void StateMachine::run() {
 
     //put TDEM code here
 
+    #ifdef DEBUG
+    Console::log("switch entered");
+    #endif
     switch(currentMode) {
         case ACTIVATION:
-            //ActivationMode();
+            #ifdef DEBUG
+            Console::log("Activation mode case");
+            #endif
+            ActivationMode(containerPointer);
             break;
         case DEPLOYMENT:
-            //run safe mode code
+            #ifdef DEBUG
+            Console::log("deployment mode case");
+            #endif
+            DeployMode(containerPointer);
+            //run deploy mode code
             break;
         case SAFE:
-            //run deployment code
-            DeployMode();
+            //run safe code
+            #ifdef DEBUG
+            Console::log("safe mode case");
+            #endif
             break;
         case ADCS:
+            #ifdef DEBUG
+            Console::log("adcs mode case");
+            #endif
             //run ADCS code
             break;
         case NOMINAL:
+            #ifndef DEBUG
+            Console::log("nominal mode case");
+            #endif
             //run nominal mode code
             break;
      }

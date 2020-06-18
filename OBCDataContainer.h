@@ -108,6 +108,7 @@ public:
     void setDeployDelayTime(unsigned long uplong);
 };
 
-OBCDataContainer DC;
+//Datacontainer
+OBCDataContainer OBCDC;
 
 #endif /* OBCDATACONTAINER_H_ */
