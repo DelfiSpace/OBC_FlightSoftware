@@ -10,7 +10,7 @@
 
 extern LittleFS fs;
 extern lfs_file_t file;
-extern lfs_dir_t dir;
+extern SDCard sdcard;
 extern unsigned long uptime;
 
 RecordingService::RecordingService(volatile bool* flag){
@@ -71,7 +71,12 @@ bool RecordingService::process(DataMessage &command, DataMessage &workingBuffer)
              }
          }else if (command.getPayload()[2] == 3){
              //reset uptime
+             fs.unmount();
+             fs.format(&sdcard);
+             fs.mount(&sdcard);
              uptime = 0;
+             //enable recording
+             *recordingFlag = true;
          }
 
          return true;
