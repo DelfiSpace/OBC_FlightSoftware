@@ -1,4 +1,5 @@
 #include "OBC.h"
+#include <stdio.h>
 
 // I2C bus
 DWire I2Cinternal(0);
@@ -31,16 +32,19 @@ SoftwareUpdateService SWupdate(fram);
 SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
 #endif
 
-Service* services[] = { &ping, &reset, &hk, &test, &SWupdate };
+volatile bool recordingEnabled = false;
+RecordingService record(&recordingEnabled);
+
+Service* services[] = { &record, &ping, &reset, &hk, &test, &SWupdate };
 
 // ADCS board tasks
-CommandHandler<PQ9Frame> cmdHandler(pq9bus, services, 5);
+CommandHandler<PQ9Frame> cmdHandler(pq9bus, services, 6);
 PeriodicTask timerTask(1000, periodicTask);
 PeriodicTask* periodicTasks[] = {&timerTask};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
 Task* tasks[] = { &timerTask, &cmdHandler };
 
-volatile bool cmdReceivedFlag = false;
+volatile bool cmdEPSReceivedFlag = false;
 DataFrame* receivedFrame;
 
 // system uptime
@@ -49,9 +53,14 @@ unsigned long uptime = 0;
 // TODO: remove when bug in CCS has been solved
 void receivedCommand(DataFrame &newFrame)
 {
-    cmdReceivedFlag = true;
-    receivedFrame = &newFrame;
-    cmdHandler.received(newFrame);
+    if(newFrame.getSource() == 2){ //Catch messages from EPS
+        //Console::log("EPS Reply!");
+        cmdEPSReceivedFlag = true;
+        receivedFrame = &newFrame;
+    }else{
+        receivedFrame = &newFrame;
+        cmdHandler.received(newFrame);
+    }
 }
 
 void validCmd(void)
@@ -59,10 +68,23 @@ void validCmd(void)
     reset.kickInternalWatchDog();
 }
 
+
+LittleFS fs;
+lfs_file_t file;
+lfs_dir_t dir;
+uint8_t TelemetryBuffer[125];
+
 void periodicTask()
 {
     // increase the timer, this happens every second
     uptime++;
+
+    //rewind back to the beginning of the file with Seek and Save Uptime
+    int err = fs.file_open(&file, "uptime", LFS_O_RDWR | LFS_O_CREAT);
+    fs.file_seek(&file, 0, 0);
+    fs.file_write(&file, &uptime, sizeof(uptime));
+    fs.file_close(&file);
+
 
     // collect telemetry
     hk.acquireTelemetry(acquireTelemetry);
@@ -73,15 +95,69 @@ void periodicTask()
 
     // kick hardware watch-dog after every telemetry collection happens
     reset.kickExternalWatchDog();
+    reset.kickInternalWatchDog(); // To avoid system reset.
 
-    // pingFriends
-//    pingModules();
-//
-//    retrieveCommCommandsReply();
-    unsigned int SDDetect = MAP_GPIO_getInputPinValue (GPIO_PORT_P2, GPIO_PIN4);
-    //Console::log("SD Detect: %d", SDDetect);
+    // get EPS Housekeeping
+    if(recordingEnabled){
+        int telemetrySize = getEPSTelemetry(TelemetryBuffer);
+        char namebuf[50];
+        int got_len = snprintf(namebuf, sizeof(namebuf), "EPS/TELEMETRY_%d", uptime);
+        Console::log("Creating File: %s with Telemetry Size: %d", namebuf, telemetrySize);
 
+        int error = fs.dir_open(&dir, "EPS");
+
+        if(error == -2){ //dir does not exist
+            Console::log("Creating EPS directory...");
+            fs.mkdir("EPS");
+            Console::log("Opening EPS directory...");
+            error = fs.dir_open(&dir, "EPS");
+            fs.dir_close(&dir);
+        }else{
+            fs.dir_close(&dir);
+        }
+
+
+        if(!error){
+            error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
+            if(error){
+                Console::log("File open Error: %d", error);
+            }else{
+                fs.file_write(&file, &TelemetryBuffer, telemetrySize);
+                fs.file_close(&file);
+            }
+        }else{
+            Console::log("Folder open Error: -%d", -error);
+        }
+    }
 }
+
+//get EPSTelemetry, copy to Buf and return size
+int getEPSTelemetry(uint8_t buf[]){
+    PQ9Frame requestFrame;
+
+    requestFrame.setDestination(2); //Destination: EPS
+    requestFrame.setSource(1); // OBC
+    requestFrame.getPayload()[0] = HOUSEKEEPING_SERVICE; //target HouseKeeping Service
+    requestFrame.getPayload()[1] = SERVICE_RESPONSE_REQUEST;
+    requestFrame.setPayloadSize(2);
+    pq9bus.transmit(requestFrame);
+
+    while(!cmdEPSReceivedFlag);
+    cmdEPSReceivedFlag = false;
+
+    //get Housekeeping size
+    int EPSHouseKeepingSize = receivedFrame->getPayloadSize() - 2; //payloadsize - (ServiceNumber + Reply Byte)
+
+    //copy Housekeeping to buffer
+    for(int i = 0; i < EPSHouseKeepingSize;i++){
+        buf[i] = receivedFrame->getPayload()[2+i];
+    }
+
+    //notify back with size
+    return EPSHouseKeepingSize;
+}
+
+
 
 void acquireTelemetry(OBCTelemetryContainer *tc)
 {
@@ -156,18 +232,18 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
     // link the command handler to the PQ9 bus:
     // every time a new command is received, it will be forwarded to the command handler
     // TODO: put back the lambda function after bug in CCS has been fixed
-    pq9bus.setReceiveHandler([](DataFrame &newFrame){ cmdHandler.received(newFrame); });
-    //pq9bus.setReceiveHandler(&receivedCommand);
+    //pq9bus.setReceiveHandler([](DataFrame &newFrame){ cmdHandler.received(newFrame); });
+    pq9bus.setReceiveHandler(&receivedCommand);
 
     // every time a command is correctly processed, call the watch-dog
     // TODO: put back the lambda function after bug in CCS has been fixed
-    cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
-    //cmdHandler.onValidCommand(&validCmd);
+    // cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
+    cmdHandler.onValidCommand(&validCmd);
 
     Console::log("OBC booting...SLOT: %d", (int) Bootloader::getCurrentSlot());
 
     if(HAS_SW_VERSION == 1){
-        Console::log("SW_VERSION: %s", (const char*)xtr(SW_VERSION));
+        Console::log("SW_VERSION: %s  -  EPS Recorder", (const char*)xtr(SW_VERSION));
     }
 
     Console::log("Configure SD-Card Pins");
@@ -185,8 +261,8 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
     //SD Card BootCounter Test!
 
     // variables used by the filesystem
-    LittleFS fs;
-    lfs_file_t file;
+//    LittleFS fs;
+//    lfs_file_t file;
 
     // mount the filesystem
     err = fs.mount(&sdcard);
@@ -195,30 +271,23 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
     // this should only happen on the first boot
     if (err) {
         fs.format(&sdcard);
-        fs.mount(&sdcard);
-        Console::log("formatted.");
+        err = fs.mount(&sdcard);
+        Console::log("SDCard formatted.");
     }
 
-    // read current count
-    uint32_t boot_count = 0;
-    fs.file_open(&file, "booter", LFS_O_RDWR | LFS_O_CREAT);
-    fs.file_read(&file, &boot_count, sizeof(boot_count));
-
-    // update boot count
-    boot_count += 1;
-
-    //rewind back to the beginning of the file with Seek
-    fs.file_seek(&file, 0, 0);
-    fs.file_write(&file, &boot_count, sizeof(boot_count));
-
-    // remember the storage is not updated until the file is closed successfully
-    fs.file_close(&file);
-
-    // release any resources we were using
-    fs.unmount();
-
-    // print the boot count
-    Console::log("boot_count: %d\n", boot_count);
-
+    if(!err) {
+        // read current uptime
+        err = fs.file_open(&file, "uptime", LFS_O_RDWR | LFS_O_CREAT);
+        if(err){
+            Console::log("File Read Error: -%d",-err);
+        }else{
+            fs.file_read(&file, &uptime, sizeof(uptime));
+            // remember the storage is not updated until the file is closed successfully
+            fs.file_close(&file);
+            // print the boot count
+            Console::log("Uptime in Memory: %d\n", uptime);
+        }
+    }
+    //Console::log("DID THIS WORK?!");
     TaskManager::start(tasks, 2);
 }

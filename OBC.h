@@ -37,6 +37,7 @@
 #include "DSPI_A.h"
 #include "SDCard.h"
 #include "LittleFS.h"
+#include "RecordingService.h"
 
 #define FCLOCK 48000000
 
@@ -44,6 +45,7 @@
 
 // callback functions
 void acquireTelemetry(OBCTelemetryContainer *tc);
+int getEPSTelemetry(unsigned char *buf);
 void periodicTask();
 
 #endif /* OBC_H_ */
