@@ -25,7 +25,7 @@ bool RecordingService::process(DataMessage &command, DataMessage &workingBuffer)
         workingBuffer.getPayload()[1] = 2; //reply
         workingBuffer.setSize(2);
 
-        Console::log("RecordingService");
+        //Console::log("RecordingService");
 
          if (command.getPayload()[2] == 0)
          {
@@ -58,7 +58,7 @@ bool RecordingService::process(DataMessage &command, DataMessage &workingBuffer)
                  //no error, return telemetry while mimicking EPS
                  int telemetrySize = fs.file_size(&file);
                  if(telemetrySize > 0){
-                     Console::log("TelemetrySize: %d", telemetrySize);
+                     // Console::log("TelemetrySize: %d", telemetrySize);
 
                      fs.file_read(&file, &workingBuffer.getPayload()[2], telemetrySize);
                      fs.file_close(&file);

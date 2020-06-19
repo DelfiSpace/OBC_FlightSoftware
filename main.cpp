@@ -32,7 +32,7 @@ SoftwareUpdateService SWupdate(fram);
 SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
 #endif
 
-volatile bool recordingEnabled = false;
+volatile bool recordingEnabled = true;
 RecordingService record(&recordingEnabled);
 
 Service* services[] = { &record, &ping, &reset, &hk, &test, &SWupdate };
@@ -120,7 +120,8 @@ void periodicTask()
         if(!error){
             error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
             if(error){
-                Console::log("File open Error: %d", error);
+                Console::log("File open Error: -%d", -error);
+                fs.file_close(&file);
             }else{
                 fs.file_write(&file, &TelemetryBuffer, telemetrySize);
                 fs.file_close(&file);
@@ -279,7 +280,8 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
         // read current uptime
         err = fs.file_open(&file, "uptime", LFS_O_RDWR | LFS_O_CREAT);
         if(err){
-            Console::log("File Read Error: -%d",-err);
+            Console::log("File open Error: -%d",-err);
+            fs.file_close(&file);
         }else{
             fs.file_read(&file, &uptime, sizeof(uptime));
             // remember the storage is not updated until the file is closed successfully
