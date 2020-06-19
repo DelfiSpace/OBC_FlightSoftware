@@ -89,10 +89,29 @@ void periodicTask()
     // collect telemetry
     hk.acquireTelemetry(acquireTelemetry);
 
+
     // refresh the watch-dog configuration to make sure that, even in case of internal
     // registers corruption, the watch-dog is capable of recovering from an error
     reset.refreshConfiguration();
 
+    char namebuf[50];
+    int got_len = snprintf(namebuf, sizeof(namebuf), "OBC/TELEMETRY_%d", uptime);
+    Console::log("Creating File: %s with Telemetry Size: %d", namebuf, hk.getTelemetry()->size());
+
+        int error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
+
+        if(error){
+            fs.mkdir("OBC");
+            error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
+        }
+
+        if(error){
+            Console::log("File open Error: -%d", -error);
+            fs.file_close(&file);
+        }else{
+            fs.file_write(&file, hk.getTelemetry()->getArray(), hk.getTelemetry()->size());
+            fs.file_close(&file);
+        }
     // kick hardware watch-dog after every telemetry collection happens
     reset.kickExternalWatchDog();
     reset.kickInternalWatchDog(); // To avoid system reset.
@@ -104,30 +123,19 @@ void periodicTask()
         int got_len = snprintf(namebuf, sizeof(namebuf), "EPS/TELEMETRY_%d", uptime);
         Console::log("Creating File: %s with Telemetry Size: %d", namebuf, telemetrySize);
 
-        int error = fs.dir_open(&dir, "EPS");
+        int error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
 
-        if(error == -2){ //dir does not exist
-            Console::log("Creating EPS directory...");
+        if(error){
             fs.mkdir("EPS");
-            Console::log("Opening EPS directory...");
-            error = fs.dir_open(&dir, "EPS");
-            fs.dir_close(&dir);
-        }else{
-            fs.dir_close(&dir);
+            error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
         }
 
-
-        if(!error){
-            error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
-            if(error){
-                Console::log("File open Error: -%d", -error);
-                fs.file_close(&file);
-            }else{
-                fs.file_write(&file, &TelemetryBuffer, telemetrySize);
-                fs.file_close(&file);
-            }
+        if(error){
+            Console::log("File open Error: -%d", -error);
+            fs.file_close(&file);
         }else{
-            Console::log("Folder open Error: -%d", -error);
+            fs.file_write(&file, &TelemetryBuffer, telemetrySize);
+            fs.file_close(&file);
         }
     }
 }

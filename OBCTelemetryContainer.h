@@ -10,12 +10,12 @@
 
 #include "TelemetryContainer.h"
 
-#define ADCS_CONTAINER_SIZE  26
+#define OBC_CONTAINER_SIZE  26
 
 class OBCTelemetryContainer : public TelemetryContainer
 {
 protected:
-    unsigned char telemetry[ADCS_CONTAINER_SIZE];
+    unsigned char telemetry[OBC_CONTAINER_SIZE];
 
 public:
     virtual int size();

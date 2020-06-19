@@ -9,7 +9,7 @@
 
 int OBCTelemetryContainer::size()
 {
-    return ADCS_CONTAINER_SIZE;
+    return OBC_CONTAINER_SIZE;
 }
 
 unsigned char* OBCTelemetryContainer::getArray()
