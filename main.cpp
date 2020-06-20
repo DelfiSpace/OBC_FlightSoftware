@@ -106,5 +106,5 @@ void main(void)
     // print the boot count
     //Console::log("boot_count: %d\n", boot_count);
 
-    TaskManager::start(tasks, 2);
+    TaskManager::start(tasks, 3);
 }

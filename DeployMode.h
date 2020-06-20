@@ -11,6 +11,6 @@
 #include <OBCDataContainer.h>
 #include "OBC.h"
 #include "Console.h"
-void DeployMode(OBCDataContainer *container);
+void DeployMode(OBCDataContainer *container, variables *var);
 
 #endif /* DEPLOYMODE_H_ */
