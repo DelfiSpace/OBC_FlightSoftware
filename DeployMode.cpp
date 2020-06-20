@@ -11,8 +11,8 @@ void Deploy() {
     Console::log("Sending command to ADB.");
 }
 
-bool CheckDeploy(DeployState CurrentState) {
-    if(CurrentState == DEPLOYED)
+bool CheckDeploy(variables *var) {
+    if(var->currentMode == DEPLOYED)
         return true;
     else
         return false;
@@ -23,17 +23,17 @@ bool CheckDeployTelem() {
     return true;
 }
 
-void DeployAntenna(OBCDataContainer *container, DeployState CurrentState, long uptime, long endtime) {
-    if((CurrentState == NORMAL) & (uptime < endtime)) {
+void DeployAntenna(OBCDataContainer *container, variables *var, long uptime, long endtime) {
+    if((var->currentMode == NORMAL) & (uptime < endtime)) {
         if (container->getBatteryVoltage() > container->getDeployVoltage()) {
             //command ADB to deploy antenna
-            container->setMode(SAFE);
+            var->currentMode = SAFE;
             container->setDeployState(DELAYING); //why????
             //I think we need to add an extra variable for the end of delay time
             container->setDeployDelayTime(uptime + container->getDeployDelayParameter());
         }
     }
-    else if((CurrentState == NORMAL) & (uptime >= endtime)) {
+    else if((var->currentMode == NORMAL) & (uptime >= endtime)) {
         container->setDeployState(FORCED);
         container->setDeployDelayTime(uptime + container->getDeployDelayParameter());
     }
@@ -42,30 +42,29 @@ void DeployAntenna(OBCDataContainer *container, DeployState CurrentState, long u
 //        container.setDeployState(DELAYING);
 //
 //    }
-    else if((CurrentState == FORCED) & (uptime < container->getDeployDelayTime())) {
+    else if((var->currentMode == FORCED) & (uptime < container->getDeployDelayTime())) {
         return;
     }
-    else if((CurrentState == FORCED) & (uptime >= container->getDeployDelayTime())) {
+    else if((var->currentMode == FORCED) & (uptime >= container->getDeployDelayTime())) {
         //Command ADB to deploy
-        container->setMode(SAFE);
+        var->currentMode = SAFE;
         container->setDeployState(NORMAL);
     }
     return;
 }
 
-void DeployMode (OBCDataContainer *container) {
+void DeployMode (OBCDataContainer *container, variables *var) {
     //Here I save it in a variable to avoid consecutive calls to the same function
-    DeployState CurrentState = container->getDeployState();
     long UpTime = container->getTotalUpTime();
     long EndTime = container->getEndOfDeployState();
-    if (CheckDeploy(CurrentState) && CheckDeployTelem()) {
-        container->setMode(SAFE);
+    if (CheckDeploy(var) && CheckDeployTelem()) {
+        var->currentMode = SAFE;
         //add deployment done to database
         container->setDeployState(DEPLOYED);
         return;
     }
     else
-        DeployAntenna(container,CurrentState,UpTime,EndTime);
+        DeployAntenna(container,var,UpTime,EndTime);
 }
 
 

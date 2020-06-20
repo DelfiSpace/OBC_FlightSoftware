@@ -353,3 +353,14 @@ void OBCDataContainer::setDeployDelayTime(unsigned long uplong)
     data[61] = ((unsigned char *)&uplong)[2];
     data[62] = ((unsigned char *)&uplong)[1];
 }
+
+bool OBCDataContainer::getTimerDone()
+{
+    return ((data[63] & 0x02) != 0);
+}
+
+void OBCDataContainer::setTimerDone(bool done)
+{
+    data[63] &= (~0x02);
+    data[63] |= done ? 0x02 : 0x00;
+}

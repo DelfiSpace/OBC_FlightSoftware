@@ -11,12 +11,9 @@
 #include "OBCTelemetryContainer.h"
 #include "MB85RS.h"
 
-int BootCount;
-//True when the 30 mins have past
-bool TimerDone;
 //This function can be called from Statemachine
 //and is therefore the only one in the hpp
-void ActivationMode(OBCDataContainer *c);
+void ActivationMode(OBCDataContainer *c, variables *var);
 
 
 

@@ -8,7 +8,7 @@
 #ifndef OBCDATACONTAINER_H_
 #define OBCDATACONTAINER_H_
 
-#define OBC_DATACONTAINER_SIZE  63
+#define OBC_DATACONTAINER_SIZE  64
 
 typedef enum Mode {ACTIVATION, DEPLOYMENT, SAFE, ADCS, NOMINAL} Mode;
 typedef enum ActivationState  {UNEXPIRED, EXPIRED} ActivationState;
@@ -106,6 +106,11 @@ public:
 
     unsigned long getDeployDelayTime();
     void setDeployDelayTime(unsigned long uplong);
+
+    //this is set after the timer is done, this can be checked during future boots
+    //instead of the two times(totaluptime and waittime).
+    bool getTimerDone();
+    void setTimerDone(bool done);
 };
 
 //Datacontainer

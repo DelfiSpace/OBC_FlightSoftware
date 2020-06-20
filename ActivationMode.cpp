@@ -7,9 +7,7 @@
 
 #include "Activationmode.h"
 
-void SetUpFirstBoot() {
-    BootCount = 0;
-}
+
 void LoadSD() {
     return;
 }
@@ -32,45 +30,39 @@ uint8_t HealthCheck() {
     return 42;
 }
 
-bool CheckFlag(OBCDataContainer *c) {
-#ifdef DEBUG
-    c->setMode(DEPLOYMENT);
-#else
-    if (c.getTimerDone()) {
-        c->setMode(DEPLOYMENT);
+bool CheckFlag(OBCDataContainer *c, variables *var) {
+    if (c->getTimerDone()) {
+        var->currentMode = DEPLOYMENT;
         return true;
     }
     else
         return false;
-#endif
-    return true;
+
 }
 
-void TimerDoneFunc(OBCDataContainer *c) {
-    uint64_t Remaining = 1800 - c->getUpTime();
+void TimerDoneFunc(OBCDataContainer *c, variables *var) {
+    uint64_t Remaining = 1800 - c->getTotalUpTime();
 
     if(Remaining<1) {
-        c->setMode(DEPLOYMENT);
-        TimerDone = true;
-        }
+        var->currentMode = DEPLOYMENT;
+        c->setTimerDone(true);
+    }
     else
         return;
 
 
 }
 //c is the contianer
-void ActivationMode(OBCDataContainer *c) {
-    SetUpFirstBoot();
+void ActivationMode(OBCDataContainer *c, variables *var) {
+    var->OBCBootCount++;
     LoadSD();
-
-    //UpdateBootCount();
 
     HealthCheck();
 
-    if (CheckFlag(c))
+    if (CheckFlag(c, var))
         return;
     else
-        TimerDoneFunc(c);
+        TimerDoneFunc(c, var);
 }
 
 

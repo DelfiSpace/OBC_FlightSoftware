@@ -24,8 +24,9 @@ PingService ping;
 ResetService reset( GPIO_PORT_P4, GPIO_PIN0);
 HousekeepingService<OBCTelemetryContainer> hk;
 
-//Statemachine
-StateMachine SM (&OBCDC) ;
+// OBC board tasks
+PeriodicTask stateMachineTask(1000, StateMachine, StateMachineInit);
+
 #ifndef SW_VERSION
 SoftwareUpdateService SWupdate(fram);
 #else
@@ -39,7 +40,7 @@ CommandHandler<PQ9Frame> cmdHandler(pq9bus, services, 5);
 PeriodicTask timerTask(1000, periodicTask);
 PeriodicTask* periodicTasks[] = {&timerTask};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
-Task* tasks[] = { &timerTask, &cmdHandler };
+Task* tasks[] = { &stateMachineTask, &timerTask, &cmdHandler };
 
 volatile bool cmdReceivedFlag = false;
 DataFrame* receivedFrame;
@@ -74,8 +75,6 @@ void periodicTask()
 
     // kick hardware watch-dog after every telemetry collection happens
     reset.kickExternalWatchDog();
-
-    SM.run();
 }
 
 void acquireTelemetry(OBCTelemetryContainer *tc)
@@ -166,5 +165,5 @@ void main(void)
     // print the boot count
     //Console::log("boot_count: %d\n", boot_count);
 
-    TaskManager::start(tasks, 2);
+    TaskManager::start(tasks, 3);
 }
