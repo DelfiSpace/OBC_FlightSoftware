@@ -13,6 +13,6 @@
 	<createSlaveProjects value=""/>
 	<templateProperties value="id=com.ti.common.project.core.emptyProjectWithMainTemplate_msp432"/>
 	<filesToOpen value="main.c"/>
-	<isTargetManual value="false"/>
+	<isTargetManual value="true"/>
 	<defaultConfiguration value="Release"/>
 </projectOptions>

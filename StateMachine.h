@@ -4,13 +4,11 @@
  *  Created on: May 19, 2020
  *      Author: tom-h
  */
+
 #ifndef STATEMACHINE_H_
 #define STATEMACHINE_H_
 
-#include <driverlib.h>
-#include "Task.h"
-#include "ActivationMode.hpp"
-#include "Console.h"
+#include "OBCDataContainer.h"
 
 void StateMachineInit();
 void StateMachine();

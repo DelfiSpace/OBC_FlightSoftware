@@ -337,14 +337,3 @@ void OBCDataContainer::setADCSPowerCyclePeriod(unsigned long uplong)
 }
 
 
-
-bool OBCDataContainer::getTimerDone()
-{
-    return ((data[63] & 0x02) != 0);
-}
-
-void OBCDataContainer::setTimerDone(bool done)
-{
-    data[63] &= (~0x02);
-    data[63] |= done ? 0x02 : 0x00;
-}
