@@ -39,7 +39,7 @@ Service* services[] = { &record, &ping, &reset, &hk, &test, &SWupdate };
 
 // ADCS board tasks
 CommandHandler<PQ9Frame> cmdHandler(pq9bus, services, 6);
-PeriodicTask timerTask(1000, periodicTask);
+PeriodicTask timerTask(100, periodicTask);
 PeriodicTask* periodicTasks[] = {&timerTask};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
 Task* tasks[] = { &timerTask, &cmdHandler };
@@ -119,13 +119,15 @@ void periodicTask()
     if(recordingEnabled){
         int telemetrySize = getEPSTelemetry(TelemetryBuffer);
         char namebuf[50];
-        int got_len = snprintf(namebuf, sizeof(namebuf), "EPS/TELEMETRY_%d", uptime);
+        char folderbuf[10];
+        int got_len = snprintf(namebuf, sizeof(namebuf), "EPS%d/TELEMETRY_%d", uptime/1000, uptime);
         Console::log("Creating File: %s with Telemetry Size: %d", namebuf, telemetrySize);
 
         int error = fs.file_open(&fs.workfile, namebuf, LFS_O_RDWR | LFS_O_CREAT);
 
         if(error){
-            fs.mkdir("EPS");
+            snprintf(folderbuf, sizeof(folderbuf), "EPS%d", uptime/1000);
+            fs.mkdir(folderbuf);
             error = fs.file_open(&fs.workfile, namebuf, LFS_O_RDWR | LFS_O_CREAT);
         }
 
@@ -133,7 +135,9 @@ void periodicTask()
             Console::log("File open Error: -%d", -error);
             fs.file_close(&fs.workfile);
         }else{
+            Console::log("Write");
             fs.file_write(&fs.workfile, &TelemetryBuffer, telemetrySize);
+            Console::log("Close");
             fs.file_close(&fs.workfile);
         }
     }
