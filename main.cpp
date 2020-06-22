@@ -94,24 +94,24 @@ void periodicTask()
     // registers corruption, the watch-dog is capable of recovering from an error
     reset.refreshConfiguration();
 
-    char namebuf[50];
-    int got_len = snprintf(namebuf, sizeof(namebuf), "OBC/TELEMETRY_%d", uptime);
-    Console::log("Creating File: %s with Telemetry Size: %d", namebuf, hk.getTelemetry()->size());
-
-        int error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
-
-        if(error){
-            fs.mkdir("OBC");
-            error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
-        }
-
-        if(error){
-            Console::log("File open Error: -%d", -error);
-            fs.file_close(&file);
-        }else{
-            fs.file_write(&file, hk.getTelemetry()->getArray(), hk.getTelemetry()->size());
-            fs.file_close(&file);
-        }
+//    char namebuf[50];
+//    int got_len = snprintf(namebuf, sizeof(namebuf), "OBC/TELEMETRY_%d", uptime);
+//    Console::log("Creating File: %s with Telemetry Size: %d", namebuf, hk.getTelemetry()->size());
+//
+//        int error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
+//
+//        if(error){
+//            fs.mkdir("OBC");
+//            error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
+//        }
+//
+//        if(error){
+//            Console::log("File open Error: -%d", -error);
+//            fs.file_close(&file);
+//        }else{
+//            fs.file_write(&file, hk.getTelemetry()->getArray(), hk.getTelemetry()->size());
+//            fs.file_close(&file);
+//        }
     // kick hardware watch-dog after every telemetry collection happens
     reset.kickExternalWatchDog();
     reset.kickInternalWatchDog(); // To avoid system reset.
@@ -272,7 +272,6 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
     // variables used by the filesystem
 //    LittleFS fs;
 //    lfs_file_t file;
-
     // mount the filesystem
     err = fs.mount(&sdcard);
 
