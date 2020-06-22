@@ -70,8 +70,7 @@ void validCmd(void)
 
 
 LittleFS fs;
-lfs_file_t file;
-lfs_dir_t dir;
+
 uint8_t TelemetryBuffer[125];
 
 void periodicTask()
@@ -80,10 +79,10 @@ void periodicTask()
     uptime++;
 
     //rewind back to the beginning of the file with Seek and Save Uptime
-    int err = fs.file_open(&file, "uptime", LFS_O_RDWR | LFS_O_CREAT);
-    fs.file_seek(&file, 0, 0);
-    fs.file_write(&file, &uptime, sizeof(uptime));
-    fs.file_close(&file);
+    int err = fs.file_open(&fs.workfile, "uptime", LFS_O_RDWR | LFS_O_CREAT);
+    fs.file_seek(&fs.workfile, 0, 0);
+    fs.file_write(&fs.workfile, &uptime, sizeof(uptime));
+    fs.file_close(&fs.workfile);
 
 
     // collect telemetry
@@ -123,19 +122,19 @@ void periodicTask()
         int got_len = snprintf(namebuf, sizeof(namebuf), "EPS/TELEMETRY_%d", uptime);
         Console::log("Creating File: %s with Telemetry Size: %d", namebuf, telemetrySize);
 
-        int error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
+        int error = fs.file_open(&fs.workfile, namebuf, LFS_O_RDWR | LFS_O_CREAT);
 
         if(error){
             fs.mkdir("EPS");
-            error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
+            error = fs.file_open(&fs.workfile, namebuf, LFS_O_RDWR | LFS_O_CREAT);
         }
 
         if(error){
             Console::log("File open Error: -%d", -error);
-            fs.file_close(&file);
+            fs.file_close(&fs.workfile);
         }else{
-            fs.file_write(&file, &TelemetryBuffer, telemetrySize);
-            fs.file_close(&file);
+            fs.file_write(&fs.workfile, &TelemetryBuffer, telemetrySize);
+            fs.file_close(&fs.workfile);
         }
     }
 }
@@ -273,6 +272,7 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
 //    LittleFS fs;
 //    lfs_file_t file;
     // mount the filesystem
+
     err = fs.mount(&sdcard);
 
     // reformat if we can't mount the filesystem
@@ -285,14 +285,14 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
 
     if(!err) {
         // read current uptime
-        err = fs.file_open(&file, "uptime", LFS_O_RDWR | LFS_O_CREAT);
+        err = fs.file_open(&fs.workfile, "uptime", LFS_O_RDWR | LFS_O_CREAT);
         if(err){
             Console::log("File open Error: -%d",-err);
-            fs.file_close(&file);
+            fs.file_close(&fs.workfile);
         }else{
-            fs.file_read(&file, &uptime, sizeof(uptime));
+            fs.file_read(&fs.workfile, &uptime, sizeof(uptime));
             // remember the storage is not updated until the file is closed successfully
-            fs.file_close(&file);
+            fs.file_close(&fs.workfile);
             // print the boot count
             Console::log("Uptime in Memory: %d\n", uptime);
         }

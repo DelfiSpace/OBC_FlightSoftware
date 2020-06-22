@@ -9,7 +9,6 @@
 #include <stdio.h>
 
 extern LittleFS fs;
-extern lfs_file_t file;
 extern SDCard sdcard;
 extern unsigned long uptime;
 
@@ -51,17 +50,17 @@ bool RecordingService::process(DataMessage &command, DataMessage &workingBuffer)
 
              Console::log("Getting TargetUptime: %s", namebuf);
 
-             int error = fs.file_open(&file, namebuf, LFS_O_RDWR | LFS_O_CREAT);
+             int error = fs.file_open(&fs.workfile, namebuf, LFS_O_RDWR | LFS_O_CREAT);
              if(error){
                  Console::log("File open Error: %d", error);
              }else{
                  //no error, return telemetry while mimicking EPS
-                 int telemetrySize = fs.file_size(&file);
+                 int telemetrySize = fs.file_size(&fs.workfile);
                  if(telemetrySize > 0){
                      // Console::log("TelemetrySize: %d", telemetrySize);
 
-                     fs.file_read(&file, &workingBuffer.getPayload()[2], telemetrySize);
-                     fs.file_close(&file);
+                     fs.file_read(&fs.workfile, &workingBuffer.getPayload()[2], telemetrySize);
+                     fs.file_close(&fs.workfile);
 
                      //the frame should not be protected, so going backwards into the payload start pointer allows us to hack the frame
                      workingBuffer.getPayload()[-1] = 2; //source = EPS
