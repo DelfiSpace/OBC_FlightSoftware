@@ -12,6 +12,7 @@
                         <subpath id="subpath_0">
                             <cpu HW_revision="1.0" XML_version="1.2" description="Cortex M4 CPU" deviceSim="false" id="CORTEX_M4_0" isa="CORTEX_M4_432">
                                 <property Type="choicelist" Value="1" id="Target Interface Type"/>
+                            <property Type="filepathfield" Value="..\tunnel.jlinkscript" id="J-Link Scriptfile Path"/>
                             </cpu>
                         </subpath>
                     </router>
