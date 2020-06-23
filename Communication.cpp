@@ -5,21 +5,24 @@
  *      Author: Zhuoheng Li
  */
 
-#include "DelfiPQcore.h"
+#define COMMUNICATION_DEBUG
+
+#include "Communication.h"
+//TODO: #include "OBCDataContainer.h"
 #include "PQ9Frame.h"
 #include "PQ9Bus.h"
 #include "Console.h"
-//#include "OBCDataContainer.h"
-#include "Communication.h"
+#include "ResetService.h"
+#include "DelfiPQcore.h"
 
 #define MAX_PAYLOAD_SIZE            255
 #define PING_SERVICE                17
 #define HOUSEKEEPING_SERVICE        3
 
-
 volatile bool cmdReceivedFlag;
 DataFrame *receivedFrame;
 extern PQ9Bus pq9bus; // Defined in main.cpp
+extern ResetService reset;
 
 
 /**
@@ -57,11 +60,15 @@ void TransmitWithTimeLimit(PQ9Frame sentFrame, unsigned long timeLimitMS)
     pq9bus.transmit(sentFrame);
 
     // Wait until timeLimitMS passes or the reply arrives
-    count = FCLOCK*timeLimitMS/1000; // TODO: the timer uses FCLOCK?
+    count = FCLOCK/(1000L/timeLimitMS); // The timer uses FCLOCK
     MAP_Timer32_initModule(TIMER32_1_BASE, TIMER32_PRESCALER_1, TIMER32_32BIT, TIMER32_PERIODIC_MODE);
     MAP_Timer32_setCount(TIMER32_1_BASE, count);
     MAP_Timer32_startTimer(TIMER32_1_BASE, true);
     while ((MAP_Timer32_getValue(TIMER32_1_BASE) != 0) && (cmdReceivedFlag == false));
+
+#ifdef COMMUNICATION_DEBUG
+    Console::log("TransmitWithTimeLimit(): response count: %d", count - MAP_Timer32_getValue(TIMER32_1_BASE));
+#endif
 }
 
 
@@ -80,7 +87,9 @@ int RequestReply(Address destination, unsigned char sentSize, unsigned char *sen
 
     if (sentSize > MAX_PAYLOAD_SIZE)
     {
+#ifdef COMMUNICATION_DEBUG
         Console::log("SendFrame(): size of payload is too big: %d bytes", sentSize);
+#endif
     }
 
     sentFrame.setSource(OBC);
@@ -104,6 +113,9 @@ int RequestReply(Address destination, unsigned char sentSize, unsigned char *sen
         && (receivedFrame->getPayload()[0] == serviceNum)
         && (receivedFrame->getPayload()[1] == SERVICE_RESPONSE_REPLY))
     {
+        // Kick internal watchdog (time window: 178s)
+        reset.kickInternalWatchDog();
+
         receivedPayload = receivedFrame->getPayload();
         *receivedSize = receivedFrame->getPayloadSize();
         return SERVICE_RESPONSE_REPLY;
@@ -130,10 +142,9 @@ int PingModule(Address destination)
     sentPayload[0] = PING_SERVICE;
     sentPayload[1] = SERVICE_RESPONSE_REQUEST;
 
-    // The time limit is set to 100ms
-    return RequestReply(destination, 2, sentPayload, &receivedSize, receivedPayload, 100);
+    // The time limit is set to 10ms
+    return RequestReply(destination, 2, sentPayload, &receivedSize, receivedPayload, 10);
 }
-
 
 
 /**
