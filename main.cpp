@@ -118,16 +118,21 @@ void periodicTask()
     // get EPS Housekeeping
     if(recordingEnabled){
         int telemetrySize = getEPSTelemetry(TelemetryBuffer);
-        char namebuf[50];
-        char folderbuf[10];
-        int got_len = snprintf(namebuf, sizeof(namebuf), "EPS%d/TELEMETRY_%d", uptime/1000, uptime);
+        char namebuf[64];
+        char folderbuf[64];
+        int got_len = snprintf(namebuf, sizeof(namebuf), "LOG/%d/%d/EPS_%d", uptime/1000,uptime/100, uptime);
         Console::log("Creating File: %s with Telemetry Size: %d", namebuf, telemetrySize);
 
         int error = fs.file_open(&fs.workfile, namebuf, LFS_O_RDWR | LFS_O_CREAT);
 
         if(error){
-            snprintf(folderbuf, sizeof(folderbuf), "EPS%d", uptime/1000);
+            snprintf(folderbuf, sizeof(folderbuf), "LOG/%d", uptime/1000);
+            Console::log("Creating Folder: %s",folderbuf);
+            fs.mkdir("LOG");
             fs.mkdir(folderbuf);
+            snprintf(folderbuf, sizeof(folderbuf), "LOG/%d/%d",  uptime/1000,uptime/100);
+            fs.mkdir(folderbuf);
+            Console::log("Creating Folder: %s",folderbuf);
             error = fs.file_open(&fs.workfile, namebuf, LFS_O_RDWR | LFS_O_CREAT);
         }
 
@@ -135,9 +140,9 @@ void periodicTask()
             Console::log("File open Error: -%d", -error);
             fs.file_close(&fs.workfile);
         }else{
-            Console::log("Write");
+//            Console::log("Write");
             fs.file_write(&fs.workfile, &TelemetryBuffer, telemetrySize);
-            Console::log("Close");
+//            Console::log("Close");
             fs.file_close(&fs.workfile);
         }
     }

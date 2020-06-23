@@ -46,7 +46,7 @@ bool RecordingService::process(DataMessage &command, DataMessage &workingBuffer)
              ((unsigned char *)&targetUptime)[0] = command.getPayload()[6];
 
              char namebuf[50];
-             int got_len = snprintf(namebuf, sizeof(namebuf), "EPS%d/TELEMETRY_%d",targetUptime/1000, targetUptime);
+             int got_len = snprintf(namebuf, sizeof(namebuf), "LOG/%d/%d/EPS_%d", targetUptime/1000, targetUptime/100, targetUptime);
 
              Console::log("Getting TargetUptime: %s", namebuf);
 
