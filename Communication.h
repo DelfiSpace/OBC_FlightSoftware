@@ -47,11 +47,12 @@ void receivedCommand(DataFrame &newFrame);
  *                                      SERVICE_RESPONSE_ERROR or
  *                                      SERVICE_NO_RESPONSE
  *      unsigned char *receivedSize     Size of the payload in the received frame
- *      unsigned char *receivedPayload  Payload in the received frame
+ *      unsigned char **receivedPayload Address for the pointer for the received payload.
+ *                                      RequestReply() will change this pointer, so it points to the payload.
  *
  */
 int RequestReply(Address destination, unsigned char sentSize, unsigned char *sentPayload,
-                 unsigned char *receivedSize, unsigned char *receivedPayload,
+                 unsigned char *receivedSize, unsigned char **receivedPayload,
                  unsigned long timeLimitMS);
 
 /**

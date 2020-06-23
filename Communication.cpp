@@ -64,7 +64,7 @@ void TransmitWithTimeLimit(PQ9Frame sentFrame, unsigned long timeLimitMS)
     MAP_Timer32_initModule(TIMER32_1_BASE, TIMER32_PRESCALER_1, TIMER32_32BIT, TIMER32_PERIODIC_MODE);
     MAP_Timer32_setCount(TIMER32_1_BASE, count);
     MAP_Timer32_startTimer(TIMER32_1_BASE, true);
-    while ((MAP_Timer32_getValue(TIMER32_1_BASE) != 0) && (cmdReceivedFlag == false));
+    while ((MAP_Timer32_getValue(TIMER32_1_BASE) > 0) && (cmdReceivedFlag == false));
 
 #ifdef COMMUNICATION_DEBUG
     Console::log("TransmitWithTimeLimit(): response count: %d", count - MAP_Timer32_getValue(TIMER32_1_BASE));
@@ -79,7 +79,7 @@ void TransmitWithTimeLimit(PQ9Frame sentFrame, unsigned long timeLimitMS)
  *
  */
 int RequestReply(Address destination, unsigned char sentSize, unsigned char *sentPayload,
-                 unsigned char *receivedSize, unsigned char *receivedPayload,
+                 unsigned char *receivedSize, unsigned char **receivedPayload,
                  unsigned long timeLimitMS)
 {
     PQ9Frame sentFrame;
@@ -116,7 +116,7 @@ int RequestReply(Address destination, unsigned char sentSize, unsigned char *sen
         // Kick internal watchdog (time window: 178s)
         reset.kickInternalWatchDog();
 
-        receivedPayload = receivedFrame->getPayload();
+        *receivedPayload = receivedFrame->getPayload();
         *receivedSize = receivedFrame->getPayloadSize();
         return SERVICE_RESPONSE_REPLY;
     }
@@ -143,7 +143,7 @@ int PingModule(Address destination)
     sentPayload[1] = SERVICE_RESPONSE_REQUEST;
 
     // The time limit is set to 10ms
-    return RequestReply(destination, 2, sentPayload, &receivedSize, receivedPayload, 10);
+    return RequestReply(destination, 2, sentPayload, &receivedSize, &receivedPayload, 10);
 }
 
 
@@ -164,12 +164,12 @@ int RequestTelemetry(Address destination, TelemetryContainer *container)
     sentPayload[1] = SERVICE_RESPONSE_REQUEST;
 
     // The time limit is set to 100ms
-    ret = RequestReply(destination, 2, sentPayload, &receivedSize, receivedPayload, 100);
+    ret = RequestReply(destination, 2, sentPayload, &receivedSize, &receivedPayload, 100);
 
     // Copy the received telemetry to the container
     if (ret == SERVICE_RESPONSE_REPLY)
     {
-        for (int i = 0; i < receivedSize; i++)
+        for (int i = 0; i < receivedSize - 2; i++)
             container->getArray()[i] = receivedPayload[i + 2];
     }
 
