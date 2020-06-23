@@ -47,5 +47,6 @@
 void acquireTelemetry(OBCTelemetryContainer *tc);
 int getEPSTelemetry(unsigned char *buf);
 void periodicTask();
+void pingEPS();
 
 #endif /* OBC_H_ */

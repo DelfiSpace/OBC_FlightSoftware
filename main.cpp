@@ -37,12 +37,16 @@ RecordingService record(&recordingEnabled);
 
 Service* services[] = { &record, &ping, &reset, &hk, &test, &SWupdate };
 
-// ADCS board tasks
+// OBC board tasks
+DSPI_A SPISD;
+SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
+LittleFS fs;
+
 CommandHandler<PQ9Frame> cmdHandler(pq9bus, services, 6);
 PeriodicTask timerTask(100, periodicTask);
 PeriodicTask* periodicTasks[] = {&timerTask};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
-Task* tasks[] = { &timerTask, &cmdHandler };
+Task* tasks[] = { &fs, &timerTask, &cmdHandler };
 
 volatile bool cmdEPSReceivedFlag = false;
 DataFrame* receivedFrame;
@@ -69,24 +73,34 @@ void validCmd(void)
 }
 
 
-LittleFS fs;
-
 uint8_t TelemetryBuffer[125];
 
 void periodicTask()
 {
-    // increase the timer, this happens every second
-    uptime++;
+    if(fs._mounted){
+        int err = fs.file_open(&fs.workfile, "uptime", LFS_O_RDWR | LFS_O_CREAT);
+        if(!err){
+           fs.file_read(&fs.workfile, &uptime, sizeof(uptime));
+            // increase the timer, this happens every second
+            uptime++;
+            fs.file_seek(&fs.workfile, 0, 0);
+            fs.file_write(&fs.workfile, &uptime, sizeof(uptime));
+            fs.file_close(&fs.workfile);
+        }
+    }
 
-    //rewind back to the beginning of the file with Seek and Save Uptime
-    int err = fs.file_open(&fs.workfile, "uptime", LFS_O_RDWR | LFS_O_CREAT);
-    fs.file_seek(&fs.workfile, 0, 0);
-    fs.file_write(&fs.workfile, &uptime, sizeof(uptime));
-    fs.file_close(&fs.workfile);
+    //check if FS is corrupt, if so, format
+    if(!fs._mounted && fs._err == -84){
+        int err = fs.format(&sdcard);
+        Console::log("SD Formatted: -%d", err);
+        err = fs.mount_async(&sdcard);
+        Console::log("SD Mounted: -%d", err);
+    }
 
 
     // collect telemetry
     hk.acquireTelemetry(acquireTelemetry);
+
 
 
     // refresh the watch-dog configuration to make sure that, even in case of internal
@@ -116,7 +130,7 @@ void periodicTask()
     reset.kickInternalWatchDog(); // To avoid system reset.
 
     // get EPS Housekeeping
-    if(recordingEnabled){
+    if(recordingEnabled && fs._mounted){
         int telemetrySize = getEPSTelemetry(TelemetryBuffer);
         char namebuf[64];
         char folderbuf[64];
@@ -145,7 +159,21 @@ void periodicTask()
 //            Console::log("Close");
             fs.file_close(&fs.workfile);
         }
+    }else if (!fs._mounted){
+        pingEPS();
     }
+}
+
+void pingEPS(){
+    //Console::log("Ping EPS!");
+    PQ9Frame requestFrame;
+
+    requestFrame.setDestination(2); //Destination: EPS
+    requestFrame.setSource(1); // OBC
+    requestFrame.getPayload()[0] = PING_SERVICE; //target HouseKeeping Service
+    requestFrame.getPayload()[1] = SERVICE_RESPONSE_REQUEST;
+    requestFrame.setPayloadSize(2);
+    pq9bus.transmit(requestFrame);
 }
 
 //get EPSTelemetry, copy to Buf and return size
@@ -157,10 +185,10 @@ int getEPSTelemetry(uint8_t buf[]){
     requestFrame.getPayload()[0] = HOUSEKEEPING_SERVICE; //target HouseKeeping Service
     requestFrame.getPayload()[1] = SERVICE_RESPONSE_REQUEST;
     requestFrame.setPayloadSize(2);
-    pq9bus.transmit(requestFrame);
 
-    while(!cmdEPSReceivedFlag);
     cmdEPSReceivedFlag = false;
+    pq9bus.transmit(requestFrame);
+    while(!cmdEPSReceivedFlag);
 
     //get Housekeeping size
     int EPSHouseKeepingSize = receivedFrame->getPayloadSize() - 2; //payloadsize - (ServiceNumber + Reply Byte)
@@ -193,9 +221,6 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
 
 
 }
-
-DSPI_A SPISD;
-SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
 
 /**
  * main.c
@@ -271,10 +296,9 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
     //sd detect
     MAP_GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN4);
 
-    SPISD.initMaster(200000);
     int err = sdcard.init();
-    Console::log("SDCard Init: %d",err);
-
+    Console::log("SDCard Init: -%d",-err);
+    Console::log("Mounting SD...");
     //SD Card BootCounter Test!
 
     // variables used by the filesystem
@@ -282,17 +306,17 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
 //    lfs_file_t file;
     // mount the filesystem
 
-    err = fs.mount(&sdcard);
+    err = fs.mount_async(&sdcard);
 
     // reformat if we can't mount the filesystem
     // this should only happen on the first boot
-    if (err) {
-        fs.format(&sdcard);
-        err = fs.mount(&sdcard);
-        Console::log("SDCard formatted.");
-    }
+//    if (err) {
+//        fs.format(&sdcard);
+//        err = fs.mount(&sdcard);
+//        Console::log("SDCard formatted.");
+//    }
 
-    if(!err) {
+    if(fs._mounted) {
         // read current uptime
         err = fs.file_open(&fs.workfile, "uptime", LFS_O_RDWR | LFS_O_CREAT);
         if(err){
@@ -307,5 +331,5 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
         }
     }
     //Console::log("DID THIS WORK?!");
-    TaskManager::start(tasks, 2);
+    TaskManager::start(tasks, 3);
 }
