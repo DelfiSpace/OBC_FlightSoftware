@@ -48,25 +48,28 @@ bool RecordingService::process(DataMessage &command, DataMessage &workingBuffer)
              char namebuf[50];
              int got_len = snprintf(namebuf, sizeof(namebuf), "LOG/%d/%d/EPS_%d", targetUptime/1000, targetUptime/100, targetUptime);
 
-             Console::log("Getting TargetUptime: %s", namebuf);
+             Console::log("Target: %s", namebuf);
 
              int error = fs.file_open(&fs.workfile, namebuf, LFS_O_RDWR | LFS_O_CREAT);
+
              if(error){
-                 Console::log("File open Error: %d", error);
+//                 Console::log("File open Error: -%d", -error);
+                 fs.file_close(&fs.workfile);
              }else{
                  //no error, return telemetry while mimicking EPS
                  int telemetrySize = fs.file_size(&fs.workfile);
+//                 Console::log("No Error: -%d", -error);
                  if(telemetrySize > 0){
                      // Console::log("TelemetrySize: %d", telemetrySize);
 
                      fs.file_read(&fs.workfile, &workingBuffer.getPayload()[2], telemetrySize);
-                     fs.file_close(&fs.workfile);
 
                      //the frame should not be protected, so going backwards into the payload start pointer allows us to hack the frame
                      workingBuffer.getPayload()[-1] = 2; //source = EPS
                      workingBuffer.getPayload()[0] = 3; //housekeeping service
                      workingBuffer.setSize(telemetrySize+2);
                  }
+                 fs.file_close(&fs.workfile);
              }
          }else if (command.getPayload()[2] == 3){
              //reset uptime
