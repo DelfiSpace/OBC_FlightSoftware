@@ -1,4 +1,0 @@
-int InitEMU (void) {
-  JLINK_SYS_Report("Script File: InitEMU");
-  JLINK_ExecCommand("SetHostIF IP=tunnel:Delfi-PQ:_secret_:jlink-europe.segger.com");  
-}
