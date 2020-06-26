@@ -29,9 +29,6 @@ COMMSTelemetryContainer COMMSContainer;
 EPSTelemetryContainer EPSContainer;
 PROPTelemetryContainer PROPContainer;
 
-// File systems
-FRAMAccess framAccess(fram);
-
 // OBC board tasks
 PeriodicTask stateMachineTask(1000, StateMachine, StateMachineInit);
 // PeriodicTask SDCardTask(10000, SDCardAccess); // TODO
