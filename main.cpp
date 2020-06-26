@@ -32,7 +32,7 @@ SoftwareUpdateService SWupdate(fram);
 SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
 #endif
 
-volatile bool recordingEnabled = true;
+volatile bool recordingEnabled = false;
 RecordingService record(&recordingEnabled);
 
 Service* services[] = { &record, &ping, &reset, &hk, &test, &SWupdate };
@@ -43,7 +43,7 @@ SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
 LittleFS fs;
 
 CommandHandler<PQ9Frame> cmdHandler(pq9bus, services, 6);
-PeriodicTask timerTask(100, periodicTask);
+PeriodicTask timerTask(1000, periodicTask);
 PeriodicTask* periodicTasks[] = {&timerTask};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
 Task* tasks[] = { &fs, &timerTask, &cmdHandler };
@@ -77,7 +77,7 @@ uint8_t TelemetryBuffer[125];
 
 void periodicTask()
 {
-    if(fs._mounted){
+    if(fs._mounted && recordingEnabled){
         int err = fs.file_open(&fs.workfile, "uptime", LFS_O_RDWR | LFS_O_CREAT);
         if(!err){
            fs.file_read(&fs.workfile, &uptime, sizeof(uptime));
@@ -86,6 +86,14 @@ void periodicTask()
             fs.file_seek(&fs.workfile, 0, 0);
             fs.file_write(&fs.workfile, &uptime, sizeof(uptime));
             fs.file_close(&fs.workfile);
+        }
+    }
+    else if(fs._mounted){
+            int err = fs.file_open(&fs.workfile, "uptime", LFS_O_RDWR | LFS_O_CREAT);
+            if(!err){
+               fs.file_read(&fs.workfile, &uptime, sizeof(uptime));
+                // increase the timer, this happens every second
+                fs.file_close(&fs.workfile);
         }
     }
 

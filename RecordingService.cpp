@@ -73,12 +73,25 @@ bool RecordingService::process(DataMessage &command, DataMessage &workingBuffer)
              }
          }else if (command.getPayload()[2] == 3){
              //reset uptime
+             Console::log("Format sd");
              fs.unmount();
              fs.format(&sdcard);
-             fs.mount(&sdcard);
+             fs.mount_async(&sdcard);
              uptime = 0;
              //enable recording
              *recordingFlag = true;
+         }else if (command.getPayload()[2] == 4){
+             //reset uptime
+             Console::log("Get Uptime");
+             Console::log("Uptime: %d", uptime);
+             //enable recording
+             workingBuffer.getPayload()[0] = RECORDING_SERVICE;
+             workingBuffer.getPayload()[1] = 2; //reply
+             workingBuffer.getPayload()[2] = ((unsigned char *)&uptime)[3];
+             workingBuffer.getPayload()[3] = ((unsigned char *)&uptime)[2];
+             workingBuffer.getPayload()[4] = ((unsigned char *)&uptime)[1];
+             workingBuffer.getPayload()[5] = ((unsigned char *)&uptime)[0];
+             workingBuffer.setSize(6);
          }
 
          return true;
