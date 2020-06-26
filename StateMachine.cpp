@@ -27,26 +27,28 @@ unsigned long upTime;
 unsigned long totalUpTime;
 unsigned long OBCBootCount;
 
-OBCDataContainer dataContainer;
-ADBTelemetryContainer ADBContainer;
-ADCSTelemetryContainer ADCSContainer;
-COMMSTelemetryContainer COMMSContainer;
-EPSTelemetryContainer EPSContainer;
-PROPTelemetryContainer PROPContainer;
-
 extern ResetService reset;
+extern MB85RS fram;
+extern OBCVariableContainer variableContainer;
+extern ADBTelemetryContainer ADBContainer;
+extern ADCSTelemetryContainer ADCSContainer;
+extern COMMSTelemetryContainer COMMSContainer;
+extern EPSTelemetryContainer EPSContainer;
+extern PROPTelemetryContainer PROPContainer;
 
 void StateMachineInit()
 {
     // AcM-OBC-1: Load data from FRAM
 
-    // AcM-OBC-2: Copy data from FRAM to the SD card
+
+    // TODO: AcM-OBC-2: Copy data from FRAM to the SD card
 
 }
 
 void StateMachine()
 {
     /* put TDEM code here */
+    char response;
 
     // TODO: performance test
 #ifdef STATEMACHINE_DEBUG
@@ -64,15 +66,37 @@ void StateMachine()
     reset.kickExternalWatchDog();
 
     // TDEM-OBC-4: Request telemetry from active modules
-#ifdef STATEMACHINE_DEBUG
-    int result;
-    result = RequestTelemetry(COMMS, &COMMSContainer);
-    Console::log("upTime: %d, Request telemetry from COMMS: %d", upTime, result);
-    result = RequestTelemetry(EPS, &COMMSContainer);
-    Console::log("upTime: %d, Request telemetry from EPS: %d", upTime, result);
-#endif
+    response = RequestTelemetry(ADB, &ADBContainer);
+    variableContainer.setADBResponse(response);
 
-    // TODO: TDEM-OBC-9: Save data in dataContainer. Save dataContainer in FRAM
+    response = RequestTelemetry(ADCS, &ADCSContainer);
+    variableContainer.setADCSResponse(response);
+
+    response = RequestTelemetry(COMMS, &COMMSContainer);
+    variableContainer.setCOMMSResponse(response);
+
+    response = RequestTelemetry(EPS, &EPSContainer);
+    variableContainer.setEPSResponse(response);
+
+    response = RequestTelemetry(PROP, &PROPContainer);
+    variableContainer.setPROPResponse(response);
+
+    // TDEM-OBC-9: Save data in dataContainer. Save dataContainer in FRAM
+    if(fram->ping())
+    {
+        fram.write(ADBTELEMETRY_FRAM_OFFSET, ADBContainer.getArray(), ADBTELEMETRY_FRAM_SIZE);
+        fram.write(ADCSTELEMETRY_FRAM_OFFSET, ADCSContainer.getArray(), ADCSTELEMETRY_FRAM_SIZE);
+        fram.write(COMMSTELEMETRY_FRAM_OFFSET, COMMSContainer.getArray(), COMMSTELEMETRY_FRAM_SIZE);
+        fram.write(EPSTELEMETRY_FRAM_OFFSET, EPSContainer.getArray(), EPSTELEMETRY_FRAM_SIZE);
+        fram.write(PROPTELEMETRY_FRAM_OFFSET, PROPContainer.getArray(), PROPTELEMETRY_FRAM_SIZE);
+        fram.write(OBCVARIABLE_FRAM_OFFSET, variableContainer.getArray(), OBCVARIABLE_FRAM_SIZE);
+    }
+    else
+    {
+#ifdef STATEMACHINE_DEBUG
+        Console::log("StateMachine(): FRAM Unavailable!");
+#endif
+    }
 
     switch(currentMode)
     {

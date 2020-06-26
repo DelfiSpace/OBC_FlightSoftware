@@ -9,6 +9,7 @@
 #define OBC_H_
 
 #include <driverlib.h>
+#include <OBCVariableContainer.h>
 #include "SLOT_SELECT.h"
 #include "SoftwareUpdateService.h"
 #include "Bootloader.h"
@@ -32,8 +33,13 @@
 #include "PeriodicTaskNotifier.h"
 #include "HWMonitor.h"
 #include "ADCManager.h"
+#include "ADBTelemetryContainer.h"
+#include "ADCSTelemetryContainer.h"
+#include "COMMSTelemetryContainer.h"
+#include "EPSTelemetryContainer.h"
+#include "PROPTelemetryContainer.h"
+#include "OBCVariableContainer.h"
 #include "StateMachine.h"
-#include "OBCDataContainer.h"
 #include "Communication.h"
 
 #define FCLOCK 48000000

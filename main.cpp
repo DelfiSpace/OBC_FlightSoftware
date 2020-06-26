@@ -21,6 +21,17 @@ PQ9Bus pq9bus(3, GPIO_PORT_P9, GPIO_PIN0);
 // services running in the system
 ResetService reset( GPIO_PORT_P4, GPIO_PIN0);
 
+// Data containers in OBC
+OBCVariableContainer variableContainer;
+ADBTelemetryContainer ADBContainer;
+ADCSTelemetryContainer ADCSContainer;
+COMMSTelemetryContainer COMMSContainer;
+EPSTelemetryContainer EPSContainer;
+PROPTelemetryContainer PROPContainer;
+
+// File systems
+FRAMAccess framAccess(fram);
+
 // OBC board tasks
 PeriodicTask stateMachineTask(1000, StateMachine, StateMachineInit);
 // PeriodicTask SDCardTask(10000, SDCardAccess); // TODO

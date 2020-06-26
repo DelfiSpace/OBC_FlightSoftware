@@ -1,14 +1,14 @@
 /*
- *  OBCDataContainer.h
+ *  OBCVariableContainer.h
  *
  *  Created on: Jun 10, 2020
  *      Author: tom-h
  */
 
-#ifndef OBCDATACONTAINER_H_
-#define OBCDATACONTAINER_H_
+#ifndef OBCVARIABLECONTAINER_H_
+#define OBCVARIABLECONTAINER_H_
 
-#define OBC_DATACONTAINER_SIZE  59
+#define OBC_VARIABLECONTAINER_SIZE  63
 
 typedef enum Mode {ACTIVATIONMODE, DEPLOYMENTMODE, SAFEMODE, ADCSMODE, NOMINALMODE} Mode;
 
@@ -28,10 +28,10 @@ typedef enum OBCHealthResult {OBC_BAD, OBC_GOOD} OBCHealthResult;
 typedef enum EPSHealthResult {EPS_BAD, EPS_GOOD} EPSHealthResult;
 typedef enum PROPHealthResult {PROP_BAD, PROP_GOOD} PROPHealthResult;
 
-class OBCDataContainer
+class OBCVariableContainer
 {
 protected:
-    unsigned char data[OBC_DATACONTAINER_SIZE];
+    unsigned char data[OBC_VARIABLECONTAINER_SIZE];
 
 public:
     int size();
@@ -54,7 +54,20 @@ public:
     unsigned short getBatteryVoltage();
     void setBatteryVoltage(unsigned short battvolt);
 
+    char getADBResponse();
+    void setADBResponse(char res);
 
+    char getADCSResponse();
+    void setADCSResponse(char res);
+
+    char getCOMMSResponse();
+    void setCOMMSResponse(char res);
+
+    char getEPSResponse();
+    void setEPSResponse(char res);
+
+    char getPROPResponse();
+    void setPROPResponse(char res);
 
     // Variables in the activation mode
 
@@ -113,4 +126,4 @@ public:
     void setADCSPowerCyclePeriod(unsigned long uplong);
 };
 
-#endif /* OBCDATACONTAINER_H_ */
+#endif /* OBCVARIABLECONTAINER_H_ */
