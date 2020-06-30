@@ -27,13 +27,53 @@
 #define FRAM_WRONG_SIZE         3
 
 #define OBCFRAM_ADBTM_ADDR      5000
-#define OBCFRAM_ADCSTM_ADDR     5200
-#define OBCFRAM_COMMSTM_ADDR    5400
-#define OBCFRAM_EPSTM_ADDR      5600
-#define OBCFRAM_PROPTM_ADDR     5800
-#define OBCFRAM_VARIABLES_ADDR  6000
+#define OBCFRAM_ADCSTM_ADDR     5300
+#define OBCFRAM_COMMSTM_ADDR    5600
+#define OBCFRAM_EPSTM_ADDR      5900
+#define OBCFRAM_PROPTM_ADDR     6200
+#define OBCFRAM_VARIABLES_ADDR  6500
 
-int OBCFramRead(MB85RS &fram, unsigned long startAddress, unsigned char *array, unsigned long arraySize);
-int OBCFramWrite(MB85RS &fram, unsigned long startAddress, unsigned char *array, unsigned long arraySize);
+/**
+ *
+ *  Read an array from FRAM.
+ *  It's safer than directly using read() in MB85RS
+ *
+ *  Parameter:
+ *      MB85RS &fram                    The FRAM object
+ *      unsigned long startAddress      Staring address of a block.
+ *                                      It should be one of macros define above.
+ *      int arraySize                   It's used to compared with the actual size of the
+ *                                      array in FRAM.
+ *
+ *  Returns:
+ *      OBCFramRead()                   FRAM_NOT_AVAILABLE or
+ *                                      FRAM_OPERATION_SUCCESS or
+ *                                      FRAM_NOT_WRITTEN or
+ *                                      FRAM_WRONG_SIZE
+ *      unsigned char *array            The array from FRAM will be saved here
+ *
+ */
+int OBCFramRead(MB85RS &fram, unsigned long startAddress, unsigned char *array, int arraySize);
+
+/**
+ *
+ *  Write an array to FRAM.
+ *  It's safer than directly using write() in MB85RS
+ *
+ *  Parameter:
+ *      MB85RS &fram                    The FRAM object
+ *      unsigned long startAddress      Staring address of a block.
+ *                                      It should be one of macros define above.
+ *      unsigned char *array            The array
+ *      int arraySize                   The size of the array
+ *
+ *  Returns:
+ *      OBCFramWrite()                  FRAM_NOT_AVAILABLE or
+ *                                      FRAM_OPERATION_SUCCESS or
+ *                                      FRAM_NOT_WRITTEN or
+ *                                      FRAM_WRONG_SIZE
+ *
+ */
+int OBCFramWrite(MB85RS &fram, unsigned long startAddress, unsigned char *array, int arraySize);
 
 #endif /* OBCFRAMACCESS_H_ */

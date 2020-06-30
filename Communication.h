@@ -51,9 +51,9 @@ void receivedCommand(DataFrame &newFrame);
  *                                      RequestReply() will change this pointer, so it points to the payload.
  *
  */
-int RequestReply(Address destination, unsigned char sentSize, unsigned char *sentPayload,
-                 unsigned char *receivedSize, unsigned char **receivedPayload,
-                 unsigned long timeLimitMS);
+char RequestReply(Address destination, unsigned char sentSize, unsigned char *sentPayload,
+                  unsigned char *receivedSize, unsigned char **receivedPayload,
+                  unsigned long timeLimitMS);
 
 /**
  *
@@ -67,7 +67,7 @@ int RequestReply(Address destination, unsigned char sentSize, unsigned char *sen
  *                                      SERVICE_NO_RESPONSE
  *
  */
-int PingModule(Address destination);
+char PingModule(Address destination);
 
 /**
  *
@@ -82,5 +82,5 @@ int PingModule(Address destination);
  *      TelemetryContainer *container   The retrieved telemetry will be copied to the container
  *
  */
-int RequestTelemetry(Address destination, TelemetryContainer *container);
+char RequestTelemetry(Address destination, TelemetryContainer *container);
 

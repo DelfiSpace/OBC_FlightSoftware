@@ -13,10 +13,10 @@
 
 #include "OBCFramAccess.h"
 
-int OBCFramRead(MB85RS &fram, unsigned long startAddress, unsigned char *array, unsigned char arraySize)
+int OBCFramRead(MB85RS &fram, unsigned long startAddress, unsigned char *array, int arraySize)
 {
     unsigned long written;
-    char size;
+    unsigned char size;
 
     // Check whether the FRAM is available
     if (fram.ping() == false)
@@ -25,7 +25,7 @@ int OBCFramRead(MB85RS &fram, unsigned long startAddress, unsigned char *array, 
     }
 
     // Check whether the block is available
-    fram.read(startAddress, &written, 4);
+    fram.read(startAddress, (unsigned char *)&written, 4);
     if (written != 1)
     {
         return FRAM_NOT_WRITTEN;
@@ -44,8 +44,10 @@ int OBCFramRead(MB85RS &fram, unsigned long startAddress, unsigned char *array, 
     return FRAM_OPERATION_SUCCESS;
 }
 
-int OBCFramWrite(MB85RS &fram, unsigned long startAddress, unsigned char *array, unsigned char arraySize)
+int OBCFramWrite(MB85RS &fram, unsigned long startAddress, unsigned char *array, int arraySize)
 {
+    unsigned long written = 1;
+
     // Check whether the FRAM is available
     if (fram.ping() == false)
     {
@@ -53,18 +55,15 @@ int OBCFramWrite(MB85RS &fram, unsigned long startAddress, unsigned char *array,
     }
 
     // Check the size of the block
-    if (size > 195 || size == 0)
+    if (arraySize > 295 || arraySize == 0) // 295 is the maximum size of an array at this moment
     {
         return FRAM_WRONG_SIZE;
     }
     else
     {
-        fram.write(startAddress + 4, &arraySize, 1);
+        fram.write(startAddress + 4, (unsigned char *)&arraySize, 1);
         fram.write(startAddress + 5, array, arraySize);
-        fram.write(startAddress, "1", 1);
+        fram.write(startAddress, (unsigned char *)&written, 4);
         return FRAM_OPERATION_SUCCESS;
     }
 }
-
-
-

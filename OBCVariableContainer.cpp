@@ -8,6 +8,62 @@
 
 #include <OBCVariableContainer.h>
 
+void OBCVariableContainer::NormalInit()
+{
+    // These variables are read from FRAM but discarded
+
+    setMode(ACTIVATIONMODE);
+    setUpTime(0);
+
+    setBatteryVoltage(0);
+
+    setADBResponse(3); // SERVICE_NO_RESPONSE: 3
+    setADCSResponse(3);
+    setCOMMSResponse(3);
+    setEPSResponse(3);
+    setPROPResponse(3);
+
+    setADCSPowerState(UNINITIALIZED);
+    setEndOfADCSPowerState(0);
+    setRotateSpeed(0);
+}
+
+void OBCVariableContainer::FirstBootInit()
+{
+    setMode(ACTIVATIONMODE);
+    setUpTime(0);
+    setTotalUpTime(0);
+    setBootCount(0);
+
+    setBatteryVoltage(0);
+
+    setADBResponse(3); // SERVICE_NO_RESPONSE: 3
+    setADCSResponse(3);
+    setCOMMSResponse(3);
+    setEPSResponse(3);
+    setPROPResponse(3);
+
+    setActivationState(UNEXPIRED);
+    setEndOfActivation(1800); // 30 mins
+
+    setDeployState(NORMAL);
+    setEndOfDeployState(36000); // 10 hrs
+    setDeployVoltage(3300); // mV
+    setForcedDeployParameter(36000); // 10 hrs
+    setDeployDelayParameter(180); // 3 mins
+
+    setSMVoltage(3600); // mV
+
+    setADCSState(IDLE);
+    setEndOfADCSState(0);
+    setRotateSpeed(0);
+    setRotateSpeedLimit(5); // deg/s
+    setDetumblingPeriod(3600); // Not sure! TODO!
+    setADCSPowerState(UNINITIALIZED);
+    setEndOfADCSPowerState(0);
+    setADCSPowerCyclePeriod(16); // seconds
+}
+
 int OBCVariableContainer::size()
 {
     return OBC_VARIABLECONTAINER_SIZE;
@@ -68,52 +124,52 @@ void OBCVariableContainer::setADCSPowerState(PowerState state)
     data[4] = (unsigned char)state;
 }
 
-char getADBResponse()
+unsigned char OBCVariableContainer::getADBResponse()
 {
     return data[5];
 }
 
-void setADBResponse(char res)
+void OBCVariableContainer::setADBResponse(unsigned char res)
 {
     data[5] = res;
 }
 
-char getADCSResponse()
+unsigned char OBCVariableContainer::getADCSResponse()
 {
     return data[6];
 }
 
-void setADCSResponse(char res)
+void OBCVariableContainer::setADCSResponse(unsigned char res)
 {
     data[6] = res;
 }
 
-char getCOMMSResponse()
+unsigned char OBCVariableContainer::getCOMMSResponse()
 {
     return data[7];
 }
 
-void setCOMMSResponse(char res)
+void OBCVariableContainer::setCOMMSResponse(unsigned char res)
 {
     data[7] = res;
 }
 
-char getEPSResponse()
+unsigned char OBCVariableContainer::getEPSResponse()
 {
     return data[8];
 }
 
-void setEPSResponse(char res)
+void OBCVariableContainer::setEPSResponse(unsigned char res)
 {
     data[8] = res;
 }
 
-char getPROPResponse()
+unsigned char OBCVariableContainer::getPROPResponse()
 {
     return data[9];
 }
 
-void setPROPResponse(char res)
+void OBCVariableContainer::setPROPResponse(unsigned char res)
 {
     data[9] = res;
 }
@@ -129,7 +185,7 @@ unsigned short OBCVariableContainer::getBatteryVoltage()
 void OBCVariableContainer::setBatteryVoltage(unsigned short battvolt)
 {
     data[10] = ((unsigned char *)&battvolt)[1];
-    data[11]] = ((unsigned char *)&battvolt)[0];
+    data[11] = ((unsigned char *)&battvolt)[0];
 }
 
 unsigned short OBCVariableContainer::getDeployVoltage()
@@ -200,10 +256,10 @@ unsigned long OBCVariableContainer::getBootCount()
 
 void OBCVariableContainer::setBootCount(unsigned long count)
 {
-    data[20] = ((unsigned char *)&count)[4];
-    data[21] = ((unsigned char *)&count)[3];
-    data[22] = ((unsigned char *)&count)[2];
-    data[23] = ((unsigned char *)&count)[1];
+    data[20] = ((unsigned char *)&count)[3];
+    data[21] = ((unsigned char *)&count)[2];
+    data[22] = ((unsigned char *)&count)[1];
+    data[23] = ((unsigned char *)&count)[0];
 }
 
 unsigned long OBCVariableContainer::getUpTime()
@@ -218,10 +274,10 @@ unsigned long OBCVariableContainer::getUpTime()
 
 void OBCVariableContainer::setUpTime(unsigned long count)
 {
-    data[24] = ((unsigned char *)&count)[4];
-    data[25] = ((unsigned char *)&count)[3];
-    data[26] = ((unsigned char *)&count)[2];
-    data[27] = ((unsigned char *)&count)[1];
+    data[24] = ((unsigned char *)&count)[3];
+    data[25] = ((unsigned char *)&count)[2];
+    data[26] = ((unsigned char *)&count)[1];
+    data[27] = ((unsigned char *)&count)[0];
 }
 
 unsigned long OBCVariableContainer::getTotalUpTime()
@@ -236,10 +292,10 @@ unsigned long OBCVariableContainer::getTotalUpTime()
 
 void OBCVariableContainer::setTotalUpTime(unsigned long count)
 {
-    data[28] = ((unsigned char *)&count)[4];
-    data[29] = ((unsigned char *)&count)[3];
-    data[30] = ((unsigned char *)&count)[2];
-    data[31] = ((unsigned char *)&count)[1];
+    data[28] = ((unsigned char *)&count)[3];
+    data[29] = ((unsigned char *)&count)[2];
+    data[30] = ((unsigned char *)&count)[1];
+    data[31] = ((unsigned char *)&count)[0];
 }
 
 unsigned long OBCVariableContainer::getEndOfActivation()
@@ -254,10 +310,10 @@ unsigned long OBCVariableContainer::getEndOfActivation()
 
 void OBCVariableContainer::setEndOfActivation(unsigned long uplong)
 {
-    data[32] = ((unsigned char *)&uplong)[4];
-    data[33] = ((unsigned char *)&uplong)[3];
-    data[34] = ((unsigned char *)&uplong)[2];
-    data[35] = ((unsigned char *)&uplong)[1];
+    data[32] = ((unsigned char *)&uplong)[3];
+    data[33] = ((unsigned char *)&uplong)[2];
+    data[34] = ((unsigned char *)&uplong)[1];
+    data[35] = ((unsigned char *)&uplong)[0];
 }
 
 unsigned long OBCVariableContainer::getEndOfDeployState()
@@ -272,10 +328,10 @@ unsigned long OBCVariableContainer::getEndOfDeployState()
 
 void OBCVariableContainer::setEndOfDeployState(unsigned long uplong)
 {
-    data[36] = ((unsigned char *)&uplong)[4];
-    data[37] = ((unsigned char *)&uplong)[3];
-    data[38] = ((unsigned char *)&uplong)[2];
-    data[39] = ((unsigned char *)&uplong)[1];
+    data[36] = ((unsigned char *)&uplong)[3];
+    data[37] = ((unsigned char *)&uplong)[2];
+    data[38] = ((unsigned char *)&uplong)[1];
+    data[39] = ((unsigned char *)&uplong)[0];
 }
 
 unsigned long OBCVariableContainer::getForcedDeployParameter()
@@ -290,10 +346,10 @@ unsigned long OBCVariableContainer::getForcedDeployParameter()
 
 void OBCVariableContainer::setForcedDeployParameter(unsigned long uplong)
 {
-    data[40] = ((unsigned char *)&uplong)[4];
-    data[41] = ((unsigned char *)&uplong)[3];
-    data[42] = ((unsigned char *)&uplong)[2];
-    data[43] = ((unsigned char *)&uplong)[1];
+    data[40] = ((unsigned char *)&uplong)[3];
+    data[41] = ((unsigned char *)&uplong)[2];
+    data[42] = ((unsigned char *)&uplong)[1];
+    data[43] = ((unsigned char *)&uplong)[0];
 }
 
 unsigned long OBCVariableContainer::getDeployDelayParameter()
@@ -308,10 +364,10 @@ unsigned long OBCVariableContainer::getDeployDelayParameter()
 
 void OBCVariableContainer::setDeployDelayParameter(unsigned long uplong)
 {
-    data[44] = ((unsigned char *)&uplong)[4];
-    data[45] = ((unsigned char *)&uplong)[3];
-    data[46] = ((unsigned char *)&uplong)[2];
-    data[47] = ((unsigned char *)&uplong)[1];
+    data[44] = ((unsigned char *)&uplong)[3];
+    data[45] = ((unsigned char *)&uplong)[2];
+    data[46] = ((unsigned char *)&uplong)[1];
+    data[47] = ((unsigned char *)&uplong)[0];
 }
 
 unsigned long OBCVariableContainer::getEndOfADCSState()
@@ -326,10 +382,10 @@ unsigned long OBCVariableContainer::getEndOfADCSState()
 
 void OBCVariableContainer::setEndOfADCSState(unsigned long uplong)
 {
-    data[48] = ((unsigned char *)&uplong)[4];
-    data[49] = ((unsigned char *)&uplong)[3];
-    data[50] = ((unsigned char *)&uplong)[2];
-    data[51] = ((unsigned char *)&uplong)[1];
+    data[48] = ((unsigned char *)&uplong)[3];
+    data[49] = ((unsigned char *)&uplong)[2];
+    data[50] = ((unsigned char *)&uplong)[1];
+    data[51] = ((unsigned char *)&uplong)[0];
 }
 
 unsigned long OBCVariableContainer::getDetumblingPeriod()
@@ -344,10 +400,10 @@ unsigned long OBCVariableContainer::getDetumblingPeriod()
 
 void OBCVariableContainer::setDetumblingPeriod(unsigned long uplong)
 {
-    data[52] = ((unsigned char *)&uplong)[4];
-    data[53] = ((unsigned char *)&uplong)[3];
-    data[54] = ((unsigned char *)&uplong)[2];
-    data[55] = ((unsigned char *)&uplong)[1];
+    data[52] = ((unsigned char *)&uplong)[3];
+    data[53] = ((unsigned char *)&uplong)[2];
+    data[54] = ((unsigned char *)&uplong)[1];
+    data[55] = ((unsigned char *)&uplong)[0];
 }
 
 unsigned long OBCVariableContainer::getEndOfADCSPowerState()
@@ -362,10 +418,10 @@ unsigned long OBCVariableContainer::getEndOfADCSPowerState()
 
 void OBCVariableContainer::setEndOfADCSPowerState(unsigned long uplong)
 {
-    data[56] = ((unsigned char *)&uplong)[4];
-    data[57] = ((unsigned char *)&uplong)[3];
-    data[58] = ((unsigned char *)&uplong)[2];
-    data[59] = ((unsigned char *)&uplong)[1];
+    data[56] = ((unsigned char *)&uplong)[3];
+    data[57] = ((unsigned char *)&uplong)[2];
+    data[58] = ((unsigned char *)&uplong)[1];
+    data[59] = ((unsigned char *)&uplong)[0];
 }
 
 unsigned long OBCVariableContainer::getADCSPowerCyclePeriod()
@@ -380,8 +436,8 @@ unsigned long OBCVariableContainer::getADCSPowerCyclePeriod()
 
 void OBCVariableContainer::setADCSPowerCyclePeriod(unsigned long uplong)
 {
-    data[60] = ((unsigned char *)&uplong)[4];
-    data[61] = ((unsigned char *)&uplong)[3];
-    data[62] = ((unsigned char *)&uplong)[2];
-    data[63] = ((unsigned char *)&uplong)[1];
+    data[60] = ((unsigned char *)&uplong)[3];
+    data[61] = ((unsigned char *)&uplong)[2];
+    data[62] = ((unsigned char *)&uplong)[1];
+    data[63] = ((unsigned char *)&uplong)[0];
 }

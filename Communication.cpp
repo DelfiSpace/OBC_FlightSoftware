@@ -78,9 +78,9 @@ void TransmitWithTimeLimit(PQ9Frame sentFrame, unsigned long timeLimitMS)
  *  Please read Communication.h
  *
  */
-int RequestReply(Address destination, unsigned char sentSize, unsigned char *sentPayload,
-                 unsigned char *receivedSize, unsigned char **receivedPayload,
-                 unsigned long timeLimitMS)
+char RequestReply(Address destination, unsigned char sentSize, unsigned char *sentPayload,
+                  unsigned char *receivedSize, unsigned char **receivedPayload,
+                  unsigned long timeLimitMS)
 {
     PQ9Frame sentFrame;
     unsigned char serviceNum;
@@ -133,7 +133,7 @@ int RequestReply(Address destination, unsigned char sentSize, unsigned char *sen
  *  Please read Communication.h
  *
  */
-int PingModule(Address destination)
+char PingModule(Address destination)
 {
     unsigned char sentPayload[2];
     unsigned char receivedSize;
@@ -153,12 +153,12 @@ int PingModule(Address destination)
  *  Please read Communication.h
  *
  */
-int RequestTelemetry(Address destination, TelemetryContainer *container)
+char RequestTelemetry(Address destination, TelemetryContainer *container)
 {
     unsigned char sentPayload[2];
     unsigned char receivedSize;
     unsigned char *receivedPayload;
-    int ret;
+    char ret;
 
     sentPayload[0] = HOUSEKEEPING_SERVICE;
     sentPayload[1] = SERVICE_RESPONSE_REQUEST;

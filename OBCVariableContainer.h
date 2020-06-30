@@ -8,7 +8,7 @@
 #ifndef OBCVARIABLECONTAINER_H_
 #define OBCVARIABLECONTAINER_H_
 
-#define OBC_VARIABLECONTAINER_SIZE  63
+#define OBC_VARIABLECONTAINER_SIZE  64
 
 typedef enum Mode {ACTIVATIONMODE, DEPLOYMENTMODE, SAFEMODE, ADCSMODE, NOMINALMODE} Mode;
 
@@ -18,7 +18,7 @@ typedef enum DeployState  {NORMAL, FORCED, DELAYING, DEPLOYED} DeployState;
 typedef enum ADCSState {IDLE, DETUMBLE, DISABLED} ADCSState;
 
 // Can be used in every mode for power line V2, V3 and V4
-typedef enum PowerState {INITIALIZING, INITIALIZED, CYCLING, OFF} PowerState;
+typedef enum PowerState {UNINITIALIZED, INITIALIZED, CYCLING, OFF} PowerState;
 
 // Health check results of subsystems (TODO)
 typedef enum ADBHealthResult {ADB_BAD, ADB_GOOD} ADBHealthResult;
@@ -37,6 +37,10 @@ public:
     int size();
     unsigned char * getArray();
 
+    // Initialization functions
+    void NormalInit();
+    void FirstBootInit();
+
     // Variables which are used in every mode
 
     Mode getMode();
@@ -54,20 +58,20 @@ public:
     unsigned short getBatteryVoltage();
     void setBatteryVoltage(unsigned short battvolt);
 
-    char getADBResponse();
-    void setADBResponse(char res);
+    unsigned char getADBResponse();
+    void setADBResponse(unsigned char res);
 
-    char getADCSResponse();
-    void setADCSResponse(char res);
+    unsigned char getADCSResponse();
+    void setADCSResponse(unsigned char res);
 
-    char getCOMMSResponse();
-    void setCOMMSResponse(char res);
+    unsigned char getCOMMSResponse();
+    void setCOMMSResponse(unsigned char res);
 
-    char getEPSResponse();
-    void setEPSResponse(char res);
+    unsigned char getEPSResponse();
+    void setEPSResponse(unsigned char res);
 
-    char getPROPResponse();
-    void setPROPResponse(char res);
+    unsigned char getPROPResponse();
+    void setPROPResponse(unsigned char res);
 
     // Variables in the activation mode
 
