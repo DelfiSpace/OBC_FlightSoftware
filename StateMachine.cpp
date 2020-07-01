@@ -88,7 +88,6 @@ void StateMachine()
     reset.kickExternalWatchDog();
 
     // TDEM-OBC-4: Request telemetry from active modules
-
     response = RequestTelemetry(ADB, &ADBContainer);
     variableContainer.setADBResponse(response);
 

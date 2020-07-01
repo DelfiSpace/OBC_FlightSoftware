@@ -1,5 +1,5 @@
 /*
- * ADCS.h
+ * OBC.h
  *
  *  Created on: 23 Jul 2019
  *      Author: stefanosperett
@@ -9,7 +9,6 @@
 #define OBC_H_
 
 #include <driverlib.h>
-#include <OBCVariableContainer.h>
 #include "SLOT_SELECT.h"
 #include "SoftwareUpdateService.h"
 #include "Bootloader.h"

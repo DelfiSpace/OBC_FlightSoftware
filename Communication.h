@@ -31,7 +31,6 @@ typedef enum Address {OBC = 1, EPS = 2, ADB = 3, COMMS = 4,
  */
 void receivedCommand(DataFrame &newFrame);
 
-
 /**
  *
  *   Send a frame over the bus and get the reply
