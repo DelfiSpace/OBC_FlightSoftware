@@ -9,6 +9,7 @@
 
 #include "StateMachine.h"
 #include "Communication.h"
+#include "OBCFramAccess.h"
 #include "ActivationMode.h"
 #include "ADBTelemetryContainer.h"
 #include "ADCSTelemetryContainer.h"
@@ -25,30 +26,53 @@
 Mode currentMode;
 unsigned long upTime;
 unsigned long totalUpTime;
-unsigned long OBCBootCount;
-
-OBCDataContainer dataContainer;
-ADBTelemetryContainer ADBContainer;
-ADCSTelemetryContainer ADCSContainer;
-COMMSTelemetryContainer COMMSContainer;
-EPSTelemetryContainer EPSContainer;
-PROPTelemetryContainer PROPContainer;
 
 extern ResetService reset;
+extern MB85RS fram;
+extern OBCVariableContainer variableContainer;
+extern ADBTelemetryContainer ADBContainer;
+extern ADCSTelemetryContainer ADCSContainer;
+extern COMMSTelemetryContainer COMMSContainer;
+extern EPSTelemetryContainer EPSContainer;
+extern PROPTelemetryContainer PROPContainer;
 
 void StateMachineInit()
 {
-    // AcM-OBC-1: Load data from FRAM
 
-    // AcM-OBC-2: Copy data from FRAM to the SD card
+#ifdef STATEMACHINE_DEBUG
+    // Use it if you want to clear FRAM during debugging
+    // fram.erase();
+#endif
+
+    // AcM-OBC-1: Load data from FRAM
+    if (OBCFramRead(fram, OBCFRAM_VARIABLES_ADDR, variableContainer.getArray(), variableContainer.size()) == FRAM_OPERATION_SUCCESS)
+    {
+        variableContainer.NormalInit();
+
+        currentMode = ACTIVATIONMODE;
+        upTime = 0;
+        totalUpTime = variableContainer.getTotalUpTime();
+        variableContainer.setBootCount(variableContainer.getBootCount() + 1);
+    }
+    else
+    {
+        variableContainer.FirstBootInit(); // Including the BootCount
+
+        currentMode = ACTIVATIONMODE;
+        upTime = 0;
+        totalUpTime = 0;
+    }
+
+    // TODO: AcM-OBC-2: Copy data from FRAM to the SD card
 
 }
 
 void StateMachine()
 {
     /* put TDEM code here */
+    char response;
 
-    // TODO: performance test
+    // Performance test
 #ifdef STATEMACHINE_DEBUG
     MAP_Timer32_initModule(TIMER32_0_BASE, TIMER32_PRESCALER_1, TIMER32_32BIT, TIMER32_PERIODIC_MODE);
     MAP_Timer32_setCount(TIMER32_0_BASE, UINT32_MAX);
@@ -64,15 +88,32 @@ void StateMachine()
     reset.kickExternalWatchDog();
 
     // TDEM-OBC-4: Request telemetry from active modules
-#ifdef STATEMACHINE_DEBUG
-    int result;
-    result = RequestTelemetry(COMMS, &COMMSContainer);
-    Console::log("upTime: %d, Request telemetry from COMMS: %d", upTime, result);
-    result = RequestTelemetry(EPS, &COMMSContainer);
-    Console::log("upTime: %d, Request telemetry from EPS: %d", upTime, result);
-#endif
+    response = RequestTelemetry(ADB, &ADBContainer);
+    variableContainer.setADBResponse(response);
 
-    // TODO: TDEM-OBC-9: Save data in dataContainer. Save dataContainer in FRAM
+    response = RequestTelemetry(ADCS, &ADCSContainer);
+    variableContainer.setADCSResponse(response);
+
+    response = RequestTelemetry(COMMS, &COMMSContainer);
+    variableContainer.setCOMMSResponse(response);
+
+    response = RequestTelemetry(EPS, &EPSContainer);
+    variableContainer.setEPSResponse(response);
+
+    response = RequestTelemetry(PROP, &PROPContainer);
+    variableContainer.setPROPResponse(response);
+
+    // TDEM-OBC-9: Save variables in the variable container.
+    variableContainer.setUpTime(upTime);
+    variableContainer.setTotalUpTime(totalUpTime);
+
+    // TDEM-OBC-9: Save containers in FRAM. TODO: error handling
+    OBCFramWrite(fram, OBCFRAM_ADBTM_ADDR, ADBContainer.getArray(), ADBContainer.size());
+    OBCFramWrite(fram, OBCFRAM_ADCSTM_ADDR, ADCSContainer.getArray(), ADCSContainer.size());
+    OBCFramWrite(fram, OBCFRAM_COMMSTM_ADDR, COMMSContainer.getArray(), COMMSContainer.size());
+    OBCFramWrite(fram, OBCFRAM_EPSTM_ADDR, EPSContainer.getArray(), EPSContainer.size());
+    OBCFramWrite(fram, OBCFRAM_PROPTM_ADDR, PROPContainer.getArray(), PROPContainer.size());
+    OBCFramWrite(fram, OBCFRAM_VARIABLES_ADDR, variableContainer.getArray(), variableContainer.size());
 
     switch(currentMode)
     {

@@ -1,5 +1,5 @@
 /*
- * ADCS.h
+ * OBC.h
  *
  *  Created on: 23 Jul 2019
  *      Author: stefanosperett
@@ -32,8 +32,13 @@
 #include "PeriodicTaskNotifier.h"
 #include "HWMonitor.h"
 #include "ADCManager.h"
+#include "ADBTelemetryContainer.h"
+#include "ADCSTelemetryContainer.h"
+#include "COMMSTelemetryContainer.h"
+#include "EPSTelemetryContainer.h"
+#include "PROPTelemetryContainer.h"
+#include "OBCVariableContainer.h"
 #include "StateMachine.h"
-#include "OBCDataContainer.h"
 #include "Communication.h"
 
 #define FCLOCK 48000000
