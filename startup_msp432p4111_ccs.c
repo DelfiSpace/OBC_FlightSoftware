@@ -35,6 +35,9 @@
 *****************************************************************************/
 
 #include <stdint.h>
+#include "driverlib.h"
+#include "SLOT_SELECT.h"
+
 
 /* Linker variable that marks the top of the stack. */
 extern unsigned long __STACK_END;
@@ -42,6 +45,7 @@ extern unsigned long __STACK_END;
 /* External declaration for the reset handler that is to be called when the */
 /* processor is started                                                     */
 extern void _c_int00(void);
+extern void configVectorTable(void);
 
 /* External declaration for system initialization function                  */
 extern void SystemInit(void);
@@ -184,9 +188,15 @@ void Reset_Handler(void)
 {
     SystemInit();
 
+    configVectorTable();
     /* Jump to the CCS C Initialization Routine. */
     __asm("    .global _c_int00\n"
           "    b.w     _c_int00");
+}
+
+void configVectorTable(void)
+{
+    SCB->VTOR = (uint32_t)SELECTED_SLOT;
 }
 
 

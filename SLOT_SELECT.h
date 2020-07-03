@@ -18,11 +18,11 @@
 #define GET_SW_VERSION xtr(SW_VERSION);
 #endif
 
-#define SELECTED_SLOT (SLOT0)
+#define SELECTED_SLOT (SLOT1)
 #define SLOT0    (0x00000000)
-#define SLOT1    (0x00020000)
-#define SLOT2    (0x00030000)
-#define SLOTSIZE (0x00010000)
+#define SLOT1    (0x00100000)
+#define SLOT2    (0x00180000)
+#define SLOTSIZE (0x00080000)
 
 
 
