@@ -33,7 +33,7 @@ SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
 Service* services[] = { &ping, &reset, &hk, &test, &SWupdate };
 
 // ADCS board tasks
-CommandHandler<PQ9Frame> cmdHandler(pq9bus, services, 5);
+CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 5);
 PeriodicTask timerTask(1000, periodicTask);
 PeriodicTask* periodicTasks[] = {&timerTask};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
