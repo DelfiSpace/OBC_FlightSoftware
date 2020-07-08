@@ -71,7 +71,7 @@ void main(void)
                                  // address OBC (1)
 
     //InitBootLoader!
-    //bootLoader.JumpSlot();
+    bootLoader.JumpSlot();
 
     // initialize the reset handler:
     // - prepare the watch-dog
@@ -89,22 +89,19 @@ void main(void)
     // link the command handler to the PQ9 bus:
     // every time a new command is received, it will be forwarded to the command handler
     // TODO: put back the lambda function after bug in CCS has been fixed
-    pq9bus.setReceiveHandler([](DataFrame &newFrame){ cmdHandler.received(newFrame); });
+    //pq9bus.setReceiveHandler([](PQ9Frame &newFrame){ cmdHandler.received(newFrame); });
     pq9bus.setReceiveHandler(&receivedCommand);
 
     // every time a command is correctly processed, call the watch-dog
     // TODO: put back the lambda function after bug in CCS has been fixed
-    cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
+    //cmdHandler.onValidCommand([]{ reset.kickInternalWatchDog(); });
     //cmdHandler.onValidCommand(&validCmd);
 
-    Console::log("OBC bootingss...SLOT: %d", (int) Bootloader::getCurrentSlot());
+    Console::log("OBC booting...SLOT: %d", (int) Bootloader::getCurrentSlot());
 
     if(HAS_SW_VERSION == 1){
         Console::log("SW_VERSION: %s", (const char*)xtr(SW_VERSION));
     }
 
-    // print the boot count
-    //Console::log("boot_count: %d\n", boot_count);
-
-    TaskManager::start(tasks, 3);
+    TaskManager::start(tasks, 1);
 }
