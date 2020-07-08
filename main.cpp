@@ -7,7 +7,7 @@ TMP100 temp(I2Cinternal, 0x48);
 
 // SPI bus
 DSPI spi(3);
-MB85RS fram(spi, GPIO_PORT_P1, GPIO_PIN0, true);
+MB85RS fram(spi, GPIO_PORT_P1, GPIO_PIN0);
 
 // HardwareMonitor
 HWMonitor hwMonitor(&fram);

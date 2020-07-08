@@ -5,7 +5,7 @@
  *      Author: tom-h
  */
 
-#define STATEMACHINE_DEBUG
+
 
 #include "StateMachine.h"
 #include "Communication.h"
@@ -18,6 +18,7 @@
 #include "PROPTelemetryContainer.h"
 #include "Console.h"
 #include "ResetService.h"
+#include "DeployMode.h"
 
 #ifdef STATEMACHINE_DEBUG
     #include "DelfiPQcore.h"
@@ -53,6 +54,9 @@ void StateMachineInit()
         upTime = 0;
         totalUpTime = variableContainer.getTotalUpTime();
         variableContainer.setBootCount(variableContainer.getBootCount() + 1);
+
+        //Make sure the proper power lines are powered on
+        bool success = CommandEPS();
     }
     else
     {
@@ -61,6 +65,8 @@ void StateMachineInit()
         currentMode = ACTIVATIONMODE;
         upTime = 0;
         totalUpTime = 0;
+        //Make sure the proper power lines are powered on
+        bool success = CommandEPS();
     }
 
     // TODO: AcM-OBC-2: Copy data from FRAM to the SD card
@@ -118,10 +124,10 @@ void StateMachine()
     switch(currentMode)
     {
         case ACTIVATIONMODE:
-            // ActivationMode(&dataContainer);
+            ActivationMode(&currentMode, totalUpTime);
             break;
         case DEPLOYMENTMODE:
-            //run safe mode code
+            DeployMode(&variableContainer, &ADBContainer, &currentMode, totalUpTime);
             break;
         case SAFEMODE:
             //run deployment code

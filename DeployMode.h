@@ -8,9 +8,11 @@
 #ifndef DEPLOYMODE_H_
 #define DEPLOYMODE_H_
 
-#include <OBCDataContainer.h>
+#include <OBCVariableContainer.h>
 #include "OBC.h"
 #include "Console.h"
-void DeployMode(OBCDataContainer *container, variables *var);
+#include "Communication.h"
+
+void DeployMode(OBCVariableContainer *OBCVC, ADBTelemetryContainer *ADBTC, Mode *currentMode, unsigned long totalUptime);
 
 #endif /* DEPLOYMODE_H_ */
