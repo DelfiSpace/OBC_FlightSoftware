@@ -135,7 +135,7 @@ void StateMachine()
 
     //todo find where SM voltage is given
     //Check if voltage is high enough, else go into safe mode
-    if(EPSContainer.getBattVoltage() < 3600) { //smaller then SM voltage parameter
+    if(EPSContainer.getBattVoltage() < 3600 && currentMode != ACTIVATIONMODE && currentMode != DEPLOYMENTMODE) { //smaller then SM voltage parameter
         currentMode = SAFEMODE;
     }
     else {
