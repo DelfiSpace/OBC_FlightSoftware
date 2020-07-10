@@ -4,6 +4,8 @@
  *  Created on: 8 June 2020
  *      Author: Zhuoheng Li
  */
+#ifndef COMMUNICATION_H_
+#define COMMUNICATION_H_
 
 #include "TelemetryContainer.h"
 #include "DataFrame.h"
@@ -83,3 +85,4 @@ char PingModule(Address destination);
  */
 char RequestTelemetry(Address destination, TelemetryContainer *container);
 
+#endif /* COMMUNICATION_H_ */

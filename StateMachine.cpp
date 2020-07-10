@@ -7,6 +7,7 @@
 
 #define STATEMACHINE_DEBUG
 
+#include "OBC.h"
 #include "StateMachine.h"
 #include "Communication.h"
 #include "OBCFramAccess.h"
@@ -28,6 +29,7 @@ unsigned long upTime;
 unsigned long totalUpTime;
 
 extern ResetService reset;
+extern HousekeepingService<OBCTelemetryContainer> hk;
 extern MB85RS fram;
 extern OBCVariableContainer variableContainer;
 extern ADBTelemetryContainer ADBContainer;
@@ -36,6 +38,19 @@ extern COMMSTelemetryContainer COMMSContainer;
 extern EPSTelemetryContainer EPSContainer;
 extern PROPTelemetryContainer PROPContainer;
 
+void acquireTelemetry(OBCTelemetryContainer *tc)
+{
+    // set uptime in telemetry
+    tc->setUpTime(upTime);
+
+    float temp = ADCManager::getTempMeasurement();
+    tc->setTemp(temp);
+
+    uint16_t volt = ADCManager::getMeasurementVolt(ADC_MEM1);
+    tc->setVoltage(volt);
+
+
+}
 void StateMachineInit()
 {
 
@@ -87,6 +102,9 @@ void StateMachine()
     reset.refreshConfiguration();
     reset.kickExternalWatchDog();
 
+    //TDEM-OBC-4: acquire telemetry from OBC
+    hk.acquireTelemetry(acquireTelemetry);
+
     // TDEM-OBC-4: Request telemetry from active modules
     response = RequestTelemetry(ADB, &ADBContainer);
     variableContainer.setADBResponse(response);
@@ -114,6 +132,15 @@ void StateMachine()
     OBCFramWrite(fram, OBCFRAM_EPSTM_ADDR, EPSContainer.getArray(), EPSContainer.size());
     OBCFramWrite(fram, OBCFRAM_PROPTM_ADDR, PROPContainer.getArray(), PROPContainer.size());
     OBCFramWrite(fram, OBCFRAM_VARIABLES_ADDR, variableContainer.getArray(), variableContainer.size());
+
+    //todo find where SM voltage is given
+    //Check if voltage is high enough, else go into safe mode
+    if(EPSContainer.getBattVoltage() < 3600) { //smaller then SM voltage parameter
+        currentMode = SAFEMODE;
+    }
+    else {
+        //send telemetry
+    }
 
     switch(currentMode)
     {

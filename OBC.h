@@ -40,6 +40,7 @@
 #include "OBCVariableContainer.h"
 #include "StateMachine.h"
 #include "Communication.h"
+#include "OBCTelemetryContainer.h"
 
 #define FCLOCK 48000000
 

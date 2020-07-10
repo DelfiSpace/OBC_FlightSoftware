@@ -7,7 +7,7 @@ TMP100 temp(I2Cinternal, 0x48);
 
 // SPI bus
 DSPI spi(3);
-MB85RS fram(spi, GPIO_PORT_P1, GPIO_PIN0, true);
+MB85RS fram(spi, GPIO_PORT_P1, GPIO_PIN0);
 
 // HardwareMonitor
 HWMonitor hwMonitor(&fram);
@@ -20,6 +20,7 @@ PQ9Bus pq9bus(3, GPIO_PORT_P9, GPIO_PIN0);
 
 // services running in the system
 ResetService reset( GPIO_PORT_P4, GPIO_PIN0);
+HousekeepingService<OBCTelemetryContainer> hk;
 
 // Data containers in OBC
 OBCVariableContainer variableContainer;
@@ -30,6 +31,7 @@ EPSTelemetryContainer EPSContainer;
 PROPTelemetryContainer PROPContainer;
 
 // OBC board tasks
+
 PeriodicTask stateMachineTask(1000, StateMachine, StateMachineInit);
 // PeriodicTask SDCardTask(10000, SDCardAccess); // TODO
 PeriodicTask* periodicTasks[] = {&stateMachineTask};

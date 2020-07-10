@@ -8,7 +8,7 @@
 #ifndef STATEMACHINE_H_
 #define STATEMACHINE_H_
 
-#include "OBCDataContainer.h"
+#include "OBCVariableContainer.h"
 
 void StateMachineInit();
 void StateMachine();
