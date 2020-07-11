@@ -24,6 +24,10 @@
     #include "DelfiPQcore.h"
 #endif
 
+// I2C bus
+extern INA226 powerBus;
+extern TMP100 temp;
+
 Mode currentMode;
 unsigned long upTime;
 unsigned long totalUpTime;
@@ -40,16 +44,19 @@ extern PROPTelemetryContainer PROPContainer;
 
 void acquireTelemetry(OBCTelemetryContainer *tc)
 {
-    // set uptime in telemetry
+    unsigned short v;
+    signed short i, t;
+    // set uptime,bootcount etc. in telemetry
     tc->setUpTime(upTime);
 
-    float temp = ADCManager::getTempMeasurement();
-    tc->setTemp(temp);
+    tc->setBootCount(variableContainer.getBootCount()); //now double defined, maybe one of the two can go
 
-    uint16_t volt = ADCManager::getMeasurementVolt(ADC_MEM1);
-    tc->setVoltage(volt);
+    tc->setINAStatus((!powerBus.getVoltage(v)) & (!powerBus.getCurrent(i)));
+    tc->setVoltage(v);
+    tc->setCurrent(i);
 
-
+    tc->setTMPStatus(!temp.getTemperature(t));
+    tc->setTemp(t);
 }
 void StateMachineInit()
 {
