@@ -50,7 +50,7 @@ bool CommandEPS() {
     char Success3 = RequestReply(EPS, 4, off3, &ReplySize, &Reply, 500);
     char Success4 = RequestReply(EPS, 4, off4, &ReplySize, &Reply, 500);
 
-    if (Success1 ==1 && Success2 ==1 && Success3 ==1 && Success4 ==1) {
+    if (Success1 ==2 && Success2 ==2 && Success3 ==2 && Success4 ==2) {
         fault = false;
     }
     return fault;
