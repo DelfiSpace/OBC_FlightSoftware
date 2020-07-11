@@ -18,22 +18,24 @@ bool DeployAntenna() {
     //char to store received command
     unsigned char* Reply;
     unsigned char ReplySize;
-    unsigned char Payload[6];
 
-    //Set upd data struture according to data structure defined in xml file
+    unsigned char Payload[7];
+
+    //Set data structure according to data structure defined in xml file
     Payload[0] = execute;
     Payload[1] = request;
     Payload[2] = 0x31; //fixed value of 49
     Payload[3] = 0x01; //switch. Todo check this value
     Payload[4] = 0x01; //Feedback on if 1, off if 0
     Payload[5] = 0x11; //todo set this value
+    Payload[6] = 0x11; //todo set this value
     //Send to ADB
     char Success = RequestReply(ADB, 6, Payload, &ReplySize, &Reply, 500);
 
     if (Success) {
         done = true;
     }
-    Console::log("Sending command to ADB.");
+    Console::log("Deployment command send to ADB.");
     return done;
 
 }
@@ -53,7 +55,7 @@ bool CheckDeploy(DeployState DS) {
  * todo Sensordata has not been added to ADBtelemetry yet
  */
 bool CheckDeployTelem(OBCVariableContainer *OBCVC, ADBTelemetryContainer *ADBTC) {
-    if(0==1) {
+    if(0==1) { //todo add ADB telemetry sensor check here
         OBCVC->setDeployState(DEPLOYED);
         return true;
     }
@@ -119,13 +121,12 @@ void CheckVoltTime(OBCVariableContainer *OBCVC, Mode *currentMode, unsigned long
 }
 
 void DeployMode(OBCVariableContainer *OBCVC, ADBTelemetryContainer *ADBTC, Mode *currentMode, unsigned long totalUptime) {
-    //Save variable to avoid multiple calls
 #ifdef STATEMACHINE_DEBUG
     OBCVC->setBatteryVoltage(3600);
 #endif
+    //Save variable to avoid multiple calls
     DeployState DS = OBCVC->getDeployState();
     //first check if deployment already done by checking telemetry of ADB and OBC
-    //todo check if this should be checked realtime
     if(CheckDeploy(DS) || CheckDeployTelem(OBCVC,ADBTC)) {
         *currentMode = SAFEMODE;
         return;

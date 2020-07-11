@@ -44,7 +44,7 @@ bool CommandEPS() {
     off3[2] = V3;
     off4[2] = V4;
 
-    //Send to EPS
+    //Send to EPS, bus 1 on, all other busses off
     char Success1 = RequestReply(EPS, 4, on1, &ReplySize, &Reply, 500);
     char Success2 = RequestReply(EPS, 4, off2, &ReplySize, &Reply, 500);
     char Success3 = RequestReply(EPS, 4, off3, &ReplySize, &Reply, 500);
@@ -72,7 +72,9 @@ bool CheckTimer(unsigned long uptime) {
 
 void ActivationMode(Mode *currentMode, unsigned long totalUptime) {
     //command EPS to turn off all power lines except V1, return true if a fault occurs
-    //bool TimerDone = CheckTimer(totalUptime);
+    bool CommandSend = CommandEPS();
+
+    //todo Possibly do something if error occurs
 
     //check if current total uptime is longer than the specified time for deployment
     if (CheckTimer(totalUptime)) {
