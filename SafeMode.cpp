@@ -46,7 +46,7 @@ void SafeMode() {
 
     // Exit condition 1: Battery voltage is over some threshold (here arbitrarily set to 3800 mV)
     if(EPSContainer.getBattVoltage() > 3800) {
-        variableContainer.setMode(NOMINALMODE)
+        variableContainer.setMode(NOMINALMODE);
     }
 
 }
