@@ -187,7 +187,7 @@ bool ADCS_init(const long& upTime) {
 // === ADCSM-OBC-3 ===
 // Periodically monitor rotational speeds and operate ADCS based on rates. 
 bool ADCS_work(const long& upTime) {
-    bool success = 0;
+    bool success;
     unsigned long detumble_timer;
 
     if(variableContainer.getADCSState() == IDLE) {
@@ -206,7 +206,8 @@ bool ADCS_work(const long& upTime) {
             detumble_timer = upTime + 180;
         }
         else if(variableContainer.getRotateSpeed() < variableContainer.getRotateSpeedLimit()) {
-            variableContainer.setADCSState(IDLE);
+            success = 1;
+			variableContainer.setADCSState(IDLE);
             variableContainer.setMode(NOMINALMODE);
         }
     }
@@ -224,7 +225,8 @@ bool ADCS_work(const long& upTime) {
         else if(variableContainer.getRotateSpeed() < variableContainer.getRotateSpeedLimit()) {
 
             // TODO <Somehow tell ADCS to stop powering torquers>
-
+			
+			success = 1;
             variableContainer.setADCSState(IDLE);
             variableContainer.setMode(NOMINALMODE);
         }
@@ -232,7 +234,8 @@ bool ADCS_work(const long& upTime) {
     else if((variableContainer.getADCSState() == DETUMBLE) & (upTime >= detumble_timer)) {
             
         // TODO <Somehow tell ADCS to stop powering torquers>
-
+		
+		success = 0;
         variableContainer.setADCSState(DISABLED);
         variableContainer.setMode(SAFEMODE);
     }
