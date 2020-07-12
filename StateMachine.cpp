@@ -5,6 +5,7 @@
  *      Author: tom-h
  */
 
+#include "OBC.h"
 #include "StateMachine.h"
 #include "Communication.h"
 #include "OBCFramAccess.h"
@@ -59,8 +60,8 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
     tc->setVoltage(v);
     tc->setCurrent(i);
 
-    tc->setTMPStatus(!temp.getTemperature(t));
-    tc->setTemp(t);
+//    tc->setTMPStatus(!temp.getTemperature(t));
+//    tc->setTemp(t);
 }
 
 void StateMachineInit()
