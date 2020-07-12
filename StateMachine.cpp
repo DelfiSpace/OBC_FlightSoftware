@@ -13,6 +13,7 @@
 #include "ADCSTelemetryContainer.h"
 #include "COMMSTelemetryContainer.h"
 #include "EPSTelemetryContainer.h"
+#include "OBCTelemetryContainer.h"
 #include "PROPTelemetryContainer.h"
 #include "Console.h"
 #include "ResetService.h"

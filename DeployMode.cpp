@@ -5,7 +5,7 @@
  *      Author: tom-h
  */
 
-#include <DeployMode.h>
+#include "DeployMode.h"
 
 /*
  * Send a command to the antenna to deploy

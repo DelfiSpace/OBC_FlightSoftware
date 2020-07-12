@@ -7,9 +7,6 @@
 #ifndef COMMUNICATION_H_
 #define COMMUNICATION_H_
 
-#ifndef COMMUNICATION_H_
-#define COMMUNICATION_H_
-
 #include "TelemetryContainer.h"
 #include "DataFrame.h"
 

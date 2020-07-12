@@ -8,7 +8,7 @@
 #ifndef DEPLOYMODE_H_
 #define DEPLOYMODE_H_
 
-#include <OBCVariableContainer.h>
+#include "OBCVariableContainer.h"
 #include "OBC.h"
 #include "Console.h"
 #include "Communication.h"
