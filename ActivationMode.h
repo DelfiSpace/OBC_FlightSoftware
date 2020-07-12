@@ -7,7 +7,11 @@
 
 #ifndef ACTIVATIONMODE_H_
 #define ACTIVATIONMODE_H_
-
-void ActivationMode();
+#include "Communication.h"
+#include <OBCVariableContainer.h>
+#include "Console.h"
+#include "StateMachine.h"
+void ActivationMode(Mode *currentMode, unsigned long totalUptime);
+bool CommandEPS();
 
 #endif /* ACTIVATIONMODE_H_ */

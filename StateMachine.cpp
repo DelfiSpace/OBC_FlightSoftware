@@ -5,12 +5,10 @@
  *      Author: tom-h
  */
 
-#define STATEMACHINE_DEBUG
-
-#include "OBC.h"
 #include "StateMachine.h"
 #include "Communication.h"
 #include "OBCFramAccess.h"
+
 #include "ActivationMode.h"
 #include "ADBTelemetryContainer.h"
 #include "ADCSTelemetryContainer.h"
@@ -30,6 +28,7 @@ extern TMP100 temp;
 
 Mode currentMode;
 unsigned long upTime;
+
 unsigned long totalUpTime;
 
 extern ResetService reset;
@@ -48,7 +47,12 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
     signed short i, t;
     // set uptime,bootcount etc. in telemetry
     tc->setUpTime(upTime);
+    float temp = ADCManager::getTempMeasurement();
+    tc->setTemp(temp);
 
+    uint16_t volt = ADCManager::getMeasurementVolt(ADC_MEM1);
+    tc->setVoltage(volt);
+  
     tc->setBootCount(variableContainer.getBootCount()); //now double defined, maybe one of the two can go
 
     tc->setINAStatus((!powerBus.getVoltage(v)) & (!powerBus.getCurrent(i)));
@@ -58,6 +62,7 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
     tc->setTMPStatus(!temp.getTemperature(t));
     tc->setTemp(t);
 }
+
 void StateMachineInit()
 {
 
