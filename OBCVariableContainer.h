@@ -8,7 +8,7 @@
 #ifndef OBCVARIABLECONTAINER_H_
 #define OBCVARIABLECONTAINER_H_
 
-#define OBC_VARIABLECONTAINER_SIZE  64
+#define OBC_VARIABLECONTAINER_SIZE  68
 
 typedef enum Mode {ACTIVATIONMODE, DEPLOYMENTMODE, SAFEMODE, ADCSMODE, NOMINALMODE} Mode;
 
@@ -98,6 +98,8 @@ public:
     unsigned long getDeployDelayParameter();
     void setDeployDelayParameter(unsigned long uplong);
 
+    unsigned long getDeployDelayTime();
+    void setDeployDelayTime(unsigned long uplong);
     // Variables in the safe mode
 
     unsigned short getSMVoltage();

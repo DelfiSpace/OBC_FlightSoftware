@@ -5,9 +5,6 @@
  *      Author: tom-h
  */
 
-#define STATEMACHINE_DEBUG
-
-#include "OBC.h"
 #include "StateMachine.h"
 #include "Communication.h"
 #include "OBCFramAccess.h"
@@ -19,6 +16,7 @@
 #include "PROPTelemetryContainer.h"
 #include "Console.h"
 #include "ResetService.h"
+#include "DeployMode.h"
 
 #ifdef STATEMACHINE_DEBUG
     #include "DelfiPQcore.h"
@@ -48,9 +46,8 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
 
     uint16_t volt = ADCManager::getMeasurementVolt(ADC_MEM1);
     tc->setVoltage(volt);
-
-
 }
+
 void StateMachineInit()
 {
 

@@ -2,4 +2,4 @@
 /Debug/
 /.launches/
 /.settings/
-/.jlinkscript/
+/targetConfigs/MSP432P401R.ccxml/

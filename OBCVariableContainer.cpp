@@ -370,7 +370,7 @@ void OBCVariableContainer::setDeployDelayParameter(unsigned long uplong)
     data[47] = ((unsigned char *)&uplong)[0];
 }
 
-unsigned long OBCVariableContainer::getEndOfADCSState()
+unsigned long OBCVariableContainer::getDeployDelayTime()
 {
     unsigned long ulong;
     ((unsigned char *)&ulong)[3] = data[48];
@@ -380,7 +380,7 @@ unsigned long OBCVariableContainer::getEndOfADCSState()
     return ulong;
 }
 
-void OBCVariableContainer::setEndOfADCSState(unsigned long uplong)
+void OBCVariableContainer::setDeployDelayTime(unsigned long uplong)
 {
     data[48] = ((unsigned char *)&uplong)[3];
     data[49] = ((unsigned char *)&uplong)[2];
@@ -388,7 +388,7 @@ void OBCVariableContainer::setEndOfADCSState(unsigned long uplong)
     data[51] = ((unsigned char *)&uplong)[0];
 }
 
-unsigned long OBCVariableContainer::getDetumblingPeriod()
+unsigned long OBCVariableContainer::getEndOfADCSState()
 {
     unsigned long ulong;
     ((unsigned char *)&ulong)[3] = data[52];
@@ -398,7 +398,7 @@ unsigned long OBCVariableContainer::getDetumblingPeriod()
     return ulong;
 }
 
-void OBCVariableContainer::setDetumblingPeriod(unsigned long uplong)
+void OBCVariableContainer::setEndOfADCSState(unsigned long uplong)
 {
     data[52] = ((unsigned char *)&uplong)[3];
     data[53] = ((unsigned char *)&uplong)[2];
@@ -406,7 +406,7 @@ void OBCVariableContainer::setDetumblingPeriod(unsigned long uplong)
     data[55] = ((unsigned char *)&uplong)[0];
 }
 
-unsigned long OBCVariableContainer::getEndOfADCSPowerState()
+unsigned long OBCVariableContainer::getDetumblingPeriod()
 {
     unsigned long ulong;
     ((unsigned char *)&ulong)[3] = data[56];
@@ -416,7 +416,7 @@ unsigned long OBCVariableContainer::getEndOfADCSPowerState()
     return ulong;
 }
 
-void OBCVariableContainer::setEndOfADCSPowerState(unsigned long uplong)
+void OBCVariableContainer::setDetumblingPeriod(unsigned long uplong)
 {
     data[56] = ((unsigned char *)&uplong)[3];
     data[57] = ((unsigned char *)&uplong)[2];
@@ -424,7 +424,7 @@ void OBCVariableContainer::setEndOfADCSPowerState(unsigned long uplong)
     data[59] = ((unsigned char *)&uplong)[0];
 }
 
-unsigned long OBCVariableContainer::getADCSPowerCyclePeriod()
+unsigned long OBCVariableContainer::getEndOfADCSPowerState()
 {
     unsigned long ulong;
     ((unsigned char *)&ulong)[3] = data[60];
@@ -434,10 +434,28 @@ unsigned long OBCVariableContainer::getADCSPowerCyclePeriod()
     return ulong;
 }
 
-void OBCVariableContainer::setADCSPowerCyclePeriod(unsigned long uplong)
+void OBCVariableContainer::setEndOfADCSPowerState(unsigned long uplong)
 {
     data[60] = ((unsigned char *)&uplong)[3];
     data[61] = ((unsigned char *)&uplong)[2];
     data[62] = ((unsigned char *)&uplong)[1];
     data[63] = ((unsigned char *)&uplong)[0];
+}
+
+unsigned long OBCVariableContainer::getADCSPowerCyclePeriod()
+{
+    unsigned long ulong;
+    ((unsigned char *)&ulong)[3] = data[64];
+    ((unsigned char *)&ulong)[2] = data[65];
+    ((unsigned char *)&ulong)[1] = data[66];
+    ((unsigned char *)&ulong)[0] = data[67];
+    return ulong;
+}
+
+void OBCVariableContainer::setADCSPowerCyclePeriod(unsigned long uplong)
+{
+    data[64] = ((unsigned char *)&uplong)[3];
+    data[65] = ((unsigned char *)&uplong)[2];
+    data[66] = ((unsigned char *)&uplong)[1];
+    data[67] = ((unsigned char *)&uplong)[0];
 }
