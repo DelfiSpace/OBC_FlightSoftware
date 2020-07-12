@@ -12,8 +12,7 @@
 #define NOMINALMODE_DEBUG
 
 #include "NominalMode.h"
-#include "Console.h"
-#include "Communication.h"
+
 
 extern ADCSTelemetryContainer ADCSContainer;
 extern EPSTelemetryContainer EPSContainer;
@@ -28,7 +27,7 @@ void NominalMode() {
 
 
     // === NoM-OBC-1 ===
-    // Start by powering on ADCS to be able to receive telemetry data:
+    // Start by powering on ADCS to be able to receive ADCS telemetry data:
     if (ADCSContainer.getBusStatus() == 0) {
 
     }
@@ -38,6 +37,20 @@ void NominalMode() {
         Console::log("[DEBUG] LineControl(1,1,0,0) called.\n");
     #endif
 
+
+    // === NoM-OBC-2 ===
+    unsigned short RateLimit = variableContainer.getRotateSpeedLimit();
+
+    if (variableContainer.getRotateSpeed() >= RateLimit && variableContainer.getADCSState() == DISABLED) {
+        variableContainer.setMode(SAFEMODE);
+    }
+    else if (variableContainer.getRotateSpeed() >= RateLimit && variableContainer.getADCSState() != DISABLED) {
+        variableContainer.setMode(ADCSMODE);
+    }
+
+
+
+/*  // Alternative implementation
     // === NoM-OBC-2 ===
     // Since the ADCS is not implemented yet, no exact implementation can be defined here yet.
     // Therefore, a dummy implementation is used here, to be refined later.
@@ -50,11 +63,11 @@ void NominalMode() {
         signed long RateZ = 3;
     #endif
 
-    /*// TODO in future: replace the above with something like this:
-    signed long RateX = ADCSContainer.getRateX();
-    signed long RateY = ADCSContainer.getRateY();
-    signed long RateZ = ADCSContainer.getRateZ();
-    */
+    // // TODO in future: replace the above with something like this:
+    // signed long RateX = ADCSContainer.getRateX();
+    // signed long RateY = ADCSContainer.getRateY();
+    // signed long RateZ = ADCSContainer.getRateZ();
+
 
     // Define a total rate using the euclidean norm of angular rate vector.
     signed long TotalRate = (RateX^2 + RateY^2 + RateZ^2)^0.5;
@@ -75,6 +88,7 @@ void NominalMode() {
             Console::log("[DEBUG] Total rate %d over limit. Switching to ADCS Mode.\n",TotalRate-RateLimit);
         #endif
     }
+*/
 
     // === NoM-OBC-3 ===
     // - Not implemented.
