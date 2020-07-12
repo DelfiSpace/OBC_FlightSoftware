@@ -10,7 +10,7 @@
 
 #include "TelemetryContainer.h"
 
-#define OBC_CONTAINER_SIZE  11
+#define OBC_CONTAINER_SIZE  12
 class OBCTelemetryContainer : public TelemetryContainer
 {
 protected:
@@ -20,14 +20,28 @@ public:
     virtual int size();
     virtual unsigned char * getArray();
 
+    bool getINAStatus();
+    void setINAStatus(bool bval);
+
+    bool getTMPStatus();
+    void setTMPStatus(bool bval);
+
+    unsigned short getBootCount();
+    void setBootCount(unsigned short ushort);
+
+    unsigned short getCurrent();
+    void setCurrent(unsigned short ushort);
+
     unsigned short getVoltage();
     void setVoltage(unsigned short ushort);
+
+    unsigned short getTemp();
+    void setTemp(unsigned short ushort);
 
     unsigned long getUpTime();
     void setUpTime(unsigned long ulong);
 
-    unsigned long getTemp();
-    void setTemp(unsigned long ulong);
+
 
 
 };
