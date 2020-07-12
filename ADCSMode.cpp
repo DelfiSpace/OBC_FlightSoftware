@@ -60,7 +60,7 @@ void ADCSMode(const long& upTime) {
 
     else if(variableContainer.getADCSState() == DETUMBLE){
         
-        // <Do what exactly?>
+        bool work = ADCS_work(upTime);
 
         #ifdef ADCSMODE_DEBUG
             Console::log("[Debug] ADCSMode() : ADCSState = DETUMBLE.\n");
