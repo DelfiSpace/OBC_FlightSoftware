@@ -45,10 +45,10 @@ bool LineControl(bool Line1, bool Line2, bool Line3, bool Line4) {
     unsigned char* payload4 = payload2;
     payload4[2] = V4;
 
-    if (Line1 == 0) {payload1[0] = stateoff};
-    if (Line2 == 1) {payload2[0] = stateon};
-    if (Line3 == 1) {payload3[0] = stateon};
-    if (Line4 == 1) {payload4[0] = stateon};
+    if (Line1 == 0) {payload1[0] = stateoff;}
+    if (Line2 == 1) {payload2[0] = stateon;}
+    if (Line3 == 1) {payload3[0] = stateon;}
+    if (Line4 == 1) {payload4[0] = stateon;}
 
     //Send to EPS
     char Success1 = RequestReply(EPS, 4, payload1, &ReplySize, &Reply, 500);
