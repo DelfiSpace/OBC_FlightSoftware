@@ -7,11 +7,20 @@
 
 #ifndef ACTIVATIONMODE_H_
 #define ACTIVATIONMODE_H_
-#include "Communication.h"
-#include <OBCVariableContainer.h>
-#include "Console.h"
-#include "StateMachine.h"
-void ActivationMode(Mode *currentMode, unsigned long totalUptime);
-bool CommandEPS();
+
+#include "OBCTelemetryContainer.h"
+
+/**
+ *
+ *  Fixed logic of the activation mode
+ *
+ *  Input:
+ *      OBCContainer->getTotalUpTime()
+ *      OBCContainer->getEndOfActivation()
+ *  Output:
+ *      OBCContainer->setMode()
+ *
+ */
+void ActivationMode(OBCTelemetryContainer *OBCContainer);
 
 #endif /* ACTIVATIONMODE_H_ */

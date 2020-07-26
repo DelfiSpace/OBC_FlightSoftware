@@ -23,7 +23,7 @@ ResetService reset( GPIO_PORT_P4, GPIO_PIN0);
 HousekeepingService<OBCTelemetryContainer> hk;
 
 // Data containers in OBC
-OBCVariableContainer variableContainer;
+OBCTelemetryContainer OBCContainer;
 ADBTelemetryContainer ADBContainer;
 ADCSTelemetryContainer ADCSContainer;
 COMMSTelemetryContainer COMMSContainer;
@@ -31,12 +31,30 @@ EPSTelemetryContainer EPSContainer;
 PROPTelemetryContainer PROPContainer;
 
 // OBC board tasks
-
 PeriodicTask stateMachineTask(1000, StateMachine, StateMachineInit);
 // PeriodicTask SDCardTask(10000, SDCardAccess); // TODO
 PeriodicTask* periodicTasks[] = {&stateMachineTask};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
 Task* tasks[] = { &stateMachineTask };
+
+void acquireTelemetry(OBCTelemetryContainer *tc)
+{
+    unsigned short v;
+    signed short i, t;
+
+    // Update time
+    tc->setUpTime(tc->getUpTime() + 1);
+    tc->setTotalUpTime(tc->getTotalUpTime() + 1);
+
+    // measure the power bus (INA226)
+    tc->setBusStatus((!powerBus.getVoltage(v)) & (!powerBus.getCurrent(i)));
+    tc->setBusVoltage(v);
+    tc->setBusCurrent(i);
+
+    // acquire board temperature (TMP100)
+    tc->setTMPStatus(!temp.getTemperature(t));
+    tc->setTemperature(t);
+}
 
 /**
  * main.c

@@ -8,11 +8,28 @@
 #ifndef DEPLOYMODE_H_
 #define DEPLOYMODE_H_
 
-#include "OBCVariableContainer.h"
-#include "OBC.h"
-#include "Console.h"
-#include "Communication.h"
+#include "ADBTelemetryContainer.h"
+#include "OBCTelemetryContainer.h"
 
-void DeployMode(OBCVariableContainer *OBCVC, ADBTelemetryContainer *ADBTC, Mode *currentMode, unsigned long totalUptime);
+/**
+ *
+ *  Fixed logic of the deployment mode
+ *
+ *  Input:
+ *      OBCContainer->getTotalUpTime()
+ *      OBCContainer->getDeployState()
+ *      OBCContainer->getBusVoltage()
+ *      OBCContainer->getDeployVoltage()
+ *      OBCContainer->getEndOfDeployState()
+ *      OBCContainer->getDelayingDeployPeriod()
+ *      OBCContainer->getForcedDeployPeriod()
+ *      ADBContainer
+ *  Output:
+ *      OBCContainer->setMode()
+ *      OBCContainer->setDeployState()
+ *      OBCContainer->setEndOfDeployState()
+ *
+ */
+void DeployMode(OBCTelemetryContainer *OBCContainer, ADBTelemetryContainer ADBContainer);
 
 #endif /* DEPLOYMODE_H_ */

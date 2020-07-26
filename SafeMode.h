@@ -5,26 +5,24 @@
  *      Author: Johan Monster
  */
 
-// TODO:
-// [ ]
-
-
 // Include guard for SAFEMODE_H_
 #ifndef SAFEMODE_H_
 #define SAFEMODE_H_
 
-#include "Console.h"
-#include "StateMachine.h"
-#include "Communication.h"
-#include "LineControl.h" // Makes line control easier.
+#include "OBCTelemetryContainer.h"
 
-
-// This guy should not be needed, but CCS tells me it is.
-#include "EPSTelemetryContainer.h"
-
-
-// Declaration of SafeMode()
-void SafeMode();
+/**
+ *
+ *  Fixed logic of the safe mode
+ *
+ *  Input:
+ *      OBCContainer->getBusVoltage()
+ *      OBCContainer->getSMVoltage()
+ *  Output:
+ *      OBCContainer->setMode()
+ *
+ */
+void SafeMode(OBCTelemetryContainer *OBCContainer);
 
 // End include guard for SAFEMODE_H_
 #endif

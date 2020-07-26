@@ -9,6 +9,7 @@
 #define OBC_H_
 
 #include <driverlib.h>
+#include <OBCTelemetryContainer.h>
 #include "SLOT_SELECT.h"
 #include "SoftwareUpdateService.h"
 #include "Bootloader.h"
@@ -37,11 +38,13 @@
 #include "COMMSTelemetryContainer.h"
 #include "EPSTelemetryContainer.h"
 #include "PROPTelemetryContainer.h"
-#include "OBCVariableContainer.h"
 #include "StateMachine.h"
 #include "Communication.h"
 #include "OBCTelemetryContainer.h"
 
 #define FCLOCK 48000000
+
+// callback functions
+void acquireTelemetry(OBCTelemetryContainer *tc);
 
 #endif /* OBC_H_ */

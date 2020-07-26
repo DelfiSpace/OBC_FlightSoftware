@@ -7,9 +7,9 @@
  *  Generalizes control over EPS power lines.
  */
 
-#include "LineControl.h"
+#include "Communication.h"
 
-bool LineControl(bool Line1, bool Line2, bool Line3, bool Line4) {
+bool PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line4) {
 
     // Define relevant hex values corresponding to EPS command over bus.
     bool fault = true;

@@ -1,5 +1,5 @@
 /*
- * LineControl.h
+ * PowerBusControl.h
  *
  *  Created on: July 11th, 2020
  *      Author: Johan Monster
@@ -8,13 +8,10 @@
  */
 
 
-// Include guard for LINECONTROL_H_
-#ifndef LINECONTROL_H_
-#define LINECONTROL_H_
+// Include guard for PowerBusControl_H_
+#ifndef POWERBUSCONTROL_H_
+#define POWERBUSCONTROL_H_
 
-#include "Communication.h"
-
-bool LineControl(bool Line1, bool Line2, bool Line3, bool Line4);
 /**
  *
  *  Commands EPS to activate/deactivate certain power lines.
@@ -25,13 +22,14 @@ bool LineControl(bool Line1, bool Line2, bool Line3, bool Line4);
  *  Outputs 1 when faults occur.
  *
  *  Example:
- *  bool test = LineControl(1, 1, 0, 0);
+ *  bool test = PowerBusControl(1, 1, 0, 0);
  *
- *  WARNING: Uses that designate the first argument as 0 WILL lead to a satellite power cycle, i.e.:
- *  bool test = Linecontrol(0, x, x, x);
+ *  WARNING: Uses that designate the first argument as 0 WILL lead to a reset of OBC itself,
+ *  i.e.
+ *  bool test = PowerBusControl(0, x, x, x);
  *
  */
+bool PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line4);
 
-
-// End include guard for LINECONTROL_H_
+// End include guard for PowerBusControl_H_
 #endif

@@ -5,48 +5,44 @@
  *      Author: Johan Monster
  */
 
-// TODO:
-// [ ] Test implementation
-// [ ] Finalize documentation
-
 #define SAFEMODE_DEBUG
 
-#include "SafeMode.h"
+#include "PowerBusControl.h" // Makes line control easier.
+#include "OBCTelemetryContainer.h"
+#ifdef SAFEMODE_DEBUG
+    #include "Console.h"
+#endif
 
-extern EPSTelemetryContainer EPSContainer;
-extern OBCVariableContainer variableContainer;
-
-
-void SafeMode() {
+/**
+ *
+ *  Please refer to DeployMode.h
+ *
+ */
+void SafeMode(OBCTelemetryContainer *OBCContainer)
+{
     #ifdef SAFEMODE_DEBUG
-        Console::log("[DEBUG] SafeMode() activated.\n");
+        Console::log("SafeMode() activated.\n");
     #endif
     // === SfM-OBC-1 ===
     // Dump telemetry in FRAM to SD card
     // - To be implemented later.
 
     // === SfM-OBC-2 ===
-    // - Not implemented.
-
-    // === SfM-OBC-3 ===
     // Command EPS to turn off other power lines except V1
-    bool V1on = LineControl(1,0,0,0);
+    PowerBusControl(1,0,0,0);
 
     #ifdef SAFEMODE_DEBUG
-        Console::log("[DEBUG] LineControl(1,0,0,0) called.\n");
+        Console::log("LineControl(1,0,0,0) called.\n");
     #endif
 
-
-    // === SfM-OBC-4 ===
-    // If battery voltage > SM voltage and results of health
-
+    // === SfM-OBC-3 ===
     // === Mode exit conditions ====
     // To avoid satellite getting stuck in Safe Mode when unexpected behaviour occurs,
     //   preferably implement additional conditions in future.
 
-    // Exit condition 1: Battery voltage is over some threshold (here arbitrarily set to 3800 mV)
-    if(EPSContainer.getBattVoltage() > 3800) {
-        variableContainer.setMode(NOMINALMODE);
+    // Exit condition 1: Battery voltage is over some threshold
+    if(OBCContainer->getBusVoltage() > OBCContainer->getSMVoltage()) {
+        OBCContainer->setMode(ADCSMODE);
     }
 
 }

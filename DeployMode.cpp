@@ -5,10 +5,14 @@
  *      Author: tom-h
  */
 
-#include "DeployMode.h"
+#include "ADBTelemetryContainer.h"
+#include "OBCTelemetryContainer.h"
+#include "PowerBusControl.h"
+#include "Communication.h"
 
 /*
  * Send a command to the antenna to deploy
+ * TODO
  */
 bool DeployAntenna() {
     bool done = false;
@@ -18,7 +22,6 @@ bool DeployAntenna() {
     //char to store received command
     unsigned char* Reply;
     unsigned char ReplySize;
-
     unsigned char Payload[7];
 
     //Set data structure according to data structure defined in xml file
@@ -29,114 +32,84 @@ bool DeployAntenna() {
     Payload[4] = 0x01; //Feedback on if 1, off if 0
     Payload[5] = 0x11; //todo set this value
     Payload[6] = 0x11; //todo set this value
-    //Send to ADB
-    char Success = RequestReply(ADB, 6, Payload, &ReplySize, &Reply, 500);
 
-    if (Success) {
+    //Send to ADB
+    if (RequestReply(ADB, 6, Payload, &ReplySize, &Reply, 500) == SERVICE_RESPONSE_REPLY)
+    {
         done = true;
     }
-    Console::log("Deployment command send to ADB.");
     return done;
 
 }
 
-/*
- * Check variable container of OBC to see if antenna has been deployed
+/**
+ *
+ *  Please refer to DeployMode.h
+ *
  */
-bool CheckDeploy(DeployState DS) {
-    if(DS == DEPLOYED)
-        return true;
-    else
-        return false;
-}
+void DeployMode(OBCTelemetryContainer *OBCContainer, ADBTelemetryContainer ADBContainer)
+{
+    //Command EPS to turn off all power lines except V1
+    PowerBusControl(1, 0, 0, 0);
 
-/*
- * Check sensor data from ADB to see if antenna has been deployed
- * todo Sensordata has not been added to ADBtelemetry yet
- */
-bool CheckDeployTelem(OBCVariableContainer *OBCVC, ADBTelemetryContainer *ADBTC) {
-    if(0==1) { //todo add ADB telemetry sensor check here
-        OBCVC->setDeployState(DEPLOYED);
-        return true;
-    }
-    else
-        return false;
-}
-
-/*
- * Check to see if the voltage is high enough for deployment
- * 3 scenarios:
- * - Normal deployment when BatVolt > threshold
- * - After 10h of no deployment forced deployment is done
- * - If deployment is unsuccessfull one will check after a time to see if it has deployed
- */
-void CheckVoltTime(OBCVariableContainer *OBCVC, Mode *currentMode, unsigned long totalUptime,DeployState DS) {
-#ifdef STATEMACHINE_DEBUG
-    totalUptime = 360000;
-#endif
-    if((DS == NORMAL) && (totalUptime < OBCVC->getEndOfDeployState())) {
-        if (OBCVC->getBatteryVoltage() > OBCVC->getDeployVoltage()) {
-            if(DeployAntenna()) {
-                *currentMode = SAFEMODE;
-                OBCVC->setDeployState(DEPLOYED);
-            }
-            //Run if deployment was not successfull
-            else {
-                OBCVC->setDeployState(DELAYING);
-                OBCVC->setDeployDelayTime(totalUptime + OBCVC->getDeployDelayParameter());
-            }
-        }
-        else
+    // Check whether deployment is done. If it's done, switch state
+    switch(OBCContainer->getDeployState())
+    {
+    case DEPLOYED:
+        OBCContainer->setMode(SAFEMODE);
+        return;
+    case PREPARING_UL:
+    case DELAYING_UL:
+        if (1) // TODO: if (CheckUplinkDeployment(ADBContainer))
+        {
+            OBCContainer->setDeployState(DEPLOYED);
+            OBCContainer->setMode(SAFEMODE);
             return;
-    }
-    else if((DS == NORMAL) && (totalUptime >= OBCVC->getEndOfDeployState())) {
-        OBCVC->setDeployState(FORCED);
-    }
-    else if((DS == DELAYING) && (totalUptime > OBCVC->getDeployDelayTime())) {
-        if(DeployAntenna()) {
-            *currentMode = SAFEMODE;
-            OBCVC->setDeployState(DEPLOYED);
         }
-        else {
-            OBCVC->setDeployState(DELAYING);
-            OBCVC->setDeployDelayTime(totalUptime + OBCVC->getDeployDelayParameter());
+        break;
+    case PREPARING_DL:
+    case DELAYING_DL:
+        if (1) // TODO: if(CheckDownlinkDeployment(ADBContainer))
+        {
+            OBCContainer->setDeployState(PREPARING_UL);
         }
-        //todo Check in telemetry if sensors say it has been deployed
-        return;
+        break;
     }
-    else if((DS == DELAYING) && (totalUptime < OBCVC->getDeployDelayTime())) {
-        return;
-    }
-    else if((DS == FORCED)) {
-        if(DeployAntenna()) {
-            *currentMode = SAFEMODE;
-            OBCVC->setDeployState(DEPLOYED);
+
+    // Take operations according to current state
+    switch(OBCContainer->getDeployState())
+    {
+    case PREPARING_DL:
+        if (OBCContainer->getBusVoltage() > OBCContainer->getDeployVoltage() || OBCContainer->getTotalUpTime() > OBCContainer->getEndOfDeployState())
+        {
+            // DeployAntenna(); // TODO
+            OBCContainer->setDeployState(DELAYING_DL);
+            OBCContainer->setEndOfDeployState(OBCContainer->getTotalUpTime() + OBCContainer->getDelayingDeployPeriod());
         }
-        else {
-            OBCVC->setDeployState(DELAYING);
-            OBCVC->setDeployDelayTime(totalUptime + OBCVC->getDeployDelayParameter());
+        break;
+    case DELAYING_DL:
+        if (OBCContainer->getTotalUpTime() > OBCContainer->getEndOfDeployState())
+        {
+            OBCContainer->setDeployState(PREPARING_DL);
+            OBCContainer->setEndOfDeployState(OBCContainer->getTotalUpTime() + OBCContainer->getForcedDeployPeriod());
         }
+        break;
+    case PREPARING_UL:
+        if (OBCContainer->getBusVoltage() > OBCContainer->getDeployVoltage() || OBCContainer->getTotalUpTime() > OBCContainer->getEndOfDeployState())
+        {
+            // DeployAntenna(); // TODO
+            OBCContainer->setDeployState(DELAYING_UL);
+            OBCContainer->setEndOfDeployState(OBCContainer->getTotalUpTime() + OBCContainer->getDelayingDeployPeriod());
+        }
+        break;
+    case DELAYING_UL:
+        if (OBCContainer->getTotalUpTime() > OBCContainer->getEndOfDeployState())
+        {
+            OBCContainer->setDeployState(PREPARING_UL);
+            OBCContainer->setEndOfDeployState(OBCContainer->getTotalUpTime() + OBCContainer->getForcedDeployPeriod());
+        }
+        break;
     }
+
     return;
 }
-
-void DeployMode(OBCVariableContainer *OBCVC, ADBTelemetryContainer *ADBTC, Mode *currentMode, unsigned long totalUptime) {
-#ifdef STATEMACHINE_DEBUG
-    OBCVC->setBatteryVoltage(3600);
-#endif
-    //Save variable to avoid multiple calls
-    DeployState DS = OBCVC->getDeployState();
-    //first check if deployment already done by checking telemetry of ADB and OBC
-    if(CheckDeploy(DS) || CheckDeployTelem(OBCVC,ADBTC)) {
-        *currentMode = SAFEMODE;
-        return;
-    }
-
-    //then check if voltage is high enough and if so deploy
-    else
-        CheckVoltTime(OBCVC, currentMode, totalUptime, DS);
-}
-
-
-
-
