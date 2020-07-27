@@ -17,6 +17,7 @@
 #include "DelfiPQcore.h"
 #include "PQ9Bus.h"
 #include "PQ9Frame.h"
+#include "PQ9Message.h"
 #include "DWire.h"
 #include "INA226.h"
 #include "Console.h"
