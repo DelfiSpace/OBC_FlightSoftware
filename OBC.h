@@ -1,5 +1,5 @@
 /*
- * ADCS.h
+ * OBC.h
  *
  *  Created on: 23 Jul 2019
  *      Author: stefanosperett
@@ -9,10 +9,10 @@
 #define OBC_H_
 
 #include <driverlib.h>
+#include <OBCTelemetryContainer.h>
 #include "SLOT_SELECT.h"
 #include "SoftwareUpdateService.h"
 #include "Bootloader.h"
-#include "OBCTelemetryContainer.h"
 #include "msp.h"
 #include "DelfiPQcore.h"
 #include "PQ9Bus.h"
@@ -31,17 +31,21 @@
 #include "TMP100.h"
 #include "DSPI.h"
 #include "MB85RS.h"
-#include "TestService.h"
 #include "PeriodicTaskNotifier.h"
 #include "HWMonitor.h"
 #include "ADCManager.h"
+#include "ADBTelemetryContainer.h"
+#include "ADCSTelemetryContainer.h"
+#include "COMMSTelemetryContainer.h"
+#include "EPSTelemetryContainer.h"
+#include "PROPTelemetryContainer.h"
+#include "StateMachine.h"
+#include "Communication.h"
+#include "OBCTelemetryContainer.h"
 
 #define FCLOCK 48000000
 
-#define ADCS_ADDRESS     5
-
 // callback functions
 void acquireTelemetry(OBCTelemetryContainer *tc);
-void periodicTask();
 
 #endif /* OBC_H_ */
