@@ -4,119 +4,95 @@
  *  Created on: May 19, 2020
  *      Author: tom-h
  */
+#include "StateMachine.h"
 
-#define STATEMACHINE_DEBUG
+StateMachine* _stub;
 
-#include "ActivationMode.h"
-#include "DeployMode.h"
-#include "SafeMode.h"
-#include "ADCSMode.h"
-//#include "NominalMode.h"
-#include "Communication.h"
-#include "OBCFramAccess.h"
-#include "ADBTelemetryContainer.h"
-#include "ADCSTelemetryContainer.h"
-#include "COMMSTelemetryContainer.h"
-#include "EPSTelemetryContainer.h"
-#include "PROPTelemetryContainer.h"
-#include "ResetService.h"
-#include "HouseKeepingService.h"
-
-#ifdef STATEMACHINE_DEBUG
-    #include "Console.h"
-#endif
-
-extern OBCTelemetryContainer OBCContainer;
-extern ADBTelemetryContainer ADBContainer;
-extern ADCSTelemetryContainer ADCSContainer;
-extern COMMSTelemetryContainer COMMSContainer;
-extern EPSTelemetryContainer EPSContainer;
-extern PROPTelemetryContainer PROPContainer;
-extern ResetService reset;
-extern HousekeepingService<OBCTelemetryContainer> hk;
-extern MB85RS fram;
-
-extern void acquireTelemetry(OBCTelemetryContainer *tc);
-
-void StateMachineInit()
+StateMachine::StateMachine(BusMaster<PQ9Frame, PQ9Message> &busMaster)
+: PeriodicTask(2000, [](){_stub->StateMachineRun();})
 {
-#ifdef STATEMACHINE_DEBUG
-    // Use it if you want to clear FRAM during debugging
-    // fram.erase();
-#endif
-
-    // Load data from FRAM
-    if (OBCFramRead(fram, OBCFRAM_VARIABLES_ADDR, OBCContainer.getArray(), OBCContainer.size()) == FRAM_OPERATION_SUCCESS)
-    {
-        OBCContainer.NormalInit();
-    }
-    else
-    {
-        OBCContainer.FirstBootInit(); // Including the BootCount
-    }
-
-    // TODO: Copy data from FRAM to the SD card
-
+    _stub = this;
+    busHandler = &busMaster;
+    Console::log("Works?");
 }
 
-void StateMachine()
+bool StateMachine::notified(){
+    return execute | MsgsInQue | runPeriodic;
+}
+
+void StateMachine::StateMachineRun()
 {
-    // Kick the external watchdog (time window: 2.5s)
-    reset.refreshConfiguration();
-    reset.kickExternalWatchDog();
-
-    // Acquire telemetry from OBC
-    hk.acquireTelemetry(acquireTelemetry);
-
-    // Request telemetry from active modules
-    char response;
-
-    response = RequestTelemetry(ADB, &ADBContainer);
-    OBCContainer.setADBResponse(response);
-
-    response = RequestTelemetry(ADCS, &ADCSContainer);
-    OBCContainer.setADCSResponse(response);
-
-    response = RequestTelemetry(COMMS, &COMMSContainer);
-    OBCContainer.setCOMMSResponse(response);
-
-    response = RequestTelemetry(EPS, &EPSContainer);
-    OBCContainer.setEPSResponse(response);
-
-    response = RequestTelemetry(PROP, &PROPContainer);
-    OBCContainer.setPROPResponse(response);
-
-    // Save containers in FRAM. TODO: error handling
-    OBCFramWrite(fram, OBCFRAM_ADBTM_ADDR, ADBContainer.getArray(), ADBContainer.size());
-    OBCFramWrite(fram, OBCFRAM_ADCSTM_ADDR, ADCSContainer.getArray(), ADCSContainer.size());
-    OBCFramWrite(fram, OBCFRAM_COMMSTM_ADDR, COMMSContainer.getArray(), COMMSContainer.size());
-    OBCFramWrite(fram, OBCFRAM_EPSTM_ADDR, EPSContainer.getArray(), EPSContainer.size());
-    OBCFramWrite(fram, OBCFRAM_PROPTM_ADDR, PROPContainer.getArray(), PROPContainer.size());
-    OBCFramWrite(fram, OBCFRAM_VARIABLES_ADDR, OBCContainer.getArray(), OBCContainer.size());
-
-    // Check if voltage is high enough, else go into safe mode
-    if(EPSContainer.getBattVoltage() < OBCContainer.getSMVoltage() && OBCContainer.getMode() != ACTIVATIONMODE && OBCContainer.getMode() != DEPLOYMENTMODE)
-    {
-        OBCContainer.setMode(SAFEMODE);
+    execute = false; //lower immidiately, to detect 're-raise'
+    if(runPeriodic){
+        Console::log("Periodic Detect!"); //this flag gets raised if you should make time for the Periodic Function
     }
 
-    switch(OBCContainer.getMode())
-    {
-        case ACTIVATIONMODE:
-            ActivationMode(&OBCContainer);
-            break;
-        case DEPLOYMENTMODE:
-            DeployMode(&OBCContainer, ADBContainer);
-            break;
-        case SAFEMODE:
-            SafeMode(&OBCContainer);
-            break;
-        case ADCSMODE:
-            ADCSMode(&OBCContainer, ADCSContainer);
-            break;
-        case NOMINALMODE:
-            //run nominal mode code
-            break;
-     }
+    if(this->MsgsInQue && !runPeriodic){
+
+        //get Message from comms:
+        uint8_t payload = 4;
+        rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, 20, 1, 200);
+        if(rcvdMsg){
+            if(rcvdMsg->getDataPayload()[0] == 0 && rcvdMsg->getPayloadSize() > 7){ //Command = OK  //
+                uint8_t commandID = rcvdMsg->getDataPayload()[1];
+                Console::log("ID: %d | DST:%d | SRC:%d | SRV: %d | TYPE:%d | PAY0:%d", commandID,
+                             rcvdMsg->getDataPayload()[0+2], rcvdMsg->getDataPayload()[2+2], rcvdMsg->getDataPayload()[3+2],  rcvdMsg->getDataPayload()[4+2], rcvdMsg->getDataPayload()[5+2]);
+                volatile int po = 0;
+//                Console::log("Payload Size: %d", rcvdMsg->getPayloadSize());
+                //(CMD, ID) 0: dst 1: size 2: src 3: service 4: type 5: payload
+
+                //run Command
+                rcvdMsg = busHandler->RequestReply(rcvdMsg->getDataPayload()[0+2], rcvdMsg->getPayloadSize() - 7, &rcvdMsg->getDataPayload()[5+2], rcvdMsg->getDataPayload()[3+2], rcvdMsg->getDataPayload()[4+2], 200);
+                if(rcvdMsg){
+                    //Command Succesful, reply on the Radio
+                    uint8_t radioReply[256];
+                    radioReply[0] = 9; //Send Command
+                    radioReply[1] = commandID; //return command ID number
+                    //Hack: walk backwards from the payload to receive the full frame.
+                    radioReply[2] = rcvdMsg->getBuffer()[-3]; //destination
+                    radioReply[3] = rcvdMsg->getBuffer()[-2]; //size
+                    radioReply[4] = rcvdMsg->getBuffer()[-1]; //Source
+                    radioReply[5] = rcvdMsg->getService();
+                    radioReply[6] = rcvdMsg->getMessageType();
+                    for(int j = 0; j < rcvdMsg->getPayloadSize(); j++){
+                        radioReply[7+j] = rcvdMsg->getDataPayload()[j];
+                    }
+                    busHandler->RequestReply(Address::COMMS, rcvdMsg->getPayloadSize() + 7, radioReply, 20, 1, 200);
+                    Console::log("%d %d %d %d %d %d %d %d", radioReply[1], radioReply[2], radioReply[3], radioReply[4], radioReply[5], radioReply[6], radioReply[7], radioReply[8]);
+                }
+            }
+        }
+
+        //pop Message from stack:
+        payload = 5;
+        busHandler->RequestReply(Address::COMMS, 1, &payload, 20, 1, 200);
+        MsgsInQue--;
+    }else{
+        Console::log("StateMachine :: Normal Mode");
+        //get Messages from COMMS:
+        unsigned char payload = 3; //command to ask the nr of messages
+        rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, 20, 1, 200);
+        if(rcvdMsg){
+            if(rcvdMsg->getDataPayload()[0] == 0){
+                MsgsInQue = rcvdMsg->getDataPayload()[1];
+                Console::log("getRadioCommands: %d", MsgsInQue);
+            }else{
+//                Console::log("getRadioCommands: FAIL");
+            }
+        }
+
+        runPeriodic = false; // if the periodic was executed due to this flag. lower it.
+    }
+
+
+
+    if(execute){
+        runPeriodic = true; //if execute got raised during execution, make sure to carry it over.
+    }
+}
+
+void StateMachineRun()
+{
+
 
 }

@@ -7,7 +7,6 @@
  *  Generalizes control over EPS power lines.
  */
 
-#include "Communication.h"
 
 bool PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line4) {
 
@@ -51,13 +50,13 @@ bool PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line4) {
     if (Line4 == 1) {payload4[0] = stateon;}
 
     //Send to EPS
-    char Success1 = RequestReply(EPS, 4, payload1, &ReplySize, &Reply, 500);
-    char Success2 = RequestReply(EPS, 4, payload2, &ReplySize, &Reply, 500);
-    char Success3 = RequestReply(EPS, 4, payload3, &ReplySize, &Reply, 500);
-    char Success4 = RequestReply(EPS, 4, payload4, &ReplySize, &Reply, 500);
+//    char Success1 = RequestReply(EPS, 4, payload1, &ReplySize, &Reply, 500);
+//    char Success2 = RequestReply(EPS, 4, payload2, &ReplySize, &Reply, 500);
+//    char Success3 = RequestReply(EPS, 4, payload3, &ReplySize, &Reply, 500);
+//    char Success4 = RequestReply(EPS, 4, payload4, &ReplySize, &Reply, 500);
 
-    if (Success1 ==2 && Success2 ==2 && Success3 ==2 && Success4 ==2) {
-        fault = false;
-    }
+//    if (Success1 ==2 && Success2 ==2 && Success3 ==2 && Success4 ==2) {
+//        fault = false;
+//    }
     return fault;
 }

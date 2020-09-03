@@ -30,6 +30,6 @@
  *      OBCContainer->setEndOfDeployState()
  *
  */
-void DeployMode(OBCTelemetryContainer *OBCContainer, ADBTelemetryContainer ADBContainer);
+//void DeployMode(OBCTelemetryContainer *OBCContainer, ADBTelemetryContainer ADBContainer);
 
 #endif /* DEPLOYMODE_H_ */

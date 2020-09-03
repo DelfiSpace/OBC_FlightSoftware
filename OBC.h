@@ -34,18 +34,14 @@
 #include "PeriodicTaskNotifier.h"
 #include "HWMonitor.h"
 #include "ADCManager.h"
-#include "ADBTelemetryContainer.h"
-#include "ADCSTelemetryContainer.h"
-#include "COMMSTelemetryContainer.h"
-#include "EPSTelemetryContainer.h"
-#include "PROPTelemetryContainer.h"
 #include "StateMachine.h"
-#include "Communication.h"
 #include "OBCTelemetryContainer.h"
+#include "BusMaster.h"
 
 #define FCLOCK 48000000
 
 // callback functions
 void acquireTelemetry(OBCTelemetryContainer *tc);
+void periodicTask();
 
 #endif /* OBC_H_ */

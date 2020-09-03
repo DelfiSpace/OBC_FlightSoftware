@@ -9,47 +9,36 @@ TMP100 temp(I2Cinternal, 0x48);
 DSPI spi(3);
 MB85RS fram(spi, GPIO_PORT_P1, GPIO_PIN0, MB85RS::CY15B104QN50SXI);
 
-// Data containers in OBC
-OBCTelemetryContainer OBCContainer;
-ADBTelemetryContainer ADBContainer;
-ADCSTelemetryContainer ADCSContainer;
-COMMSTelemetryContainer COMMSContainer;
-EPSTelemetryContainer EPSContainer;
-PROPTelemetryContainer PROPContainer;
+// HardwareMonitor
+HWMonitor hwMonitor(&fram);
 
-// OBC board tasks
-PeriodicTask stateMachineTask(1000, StateMachine, StateMachineInit);
-// PeriodicTask SDCardTask(10000, SDCardAccess); // TODO
-PeriodicTask* periodicTasks[] = {&stateMachineTask};
-PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
-Task* tasks[] = { &stateMachineTask };
+// Bootloader
+Bootloader bootLoader = Bootloader(fram);
 
 // CDHS bus handler
 PQ9Bus pq9bus(3, GPIO_PORT_P9, GPIO_PIN0);
+BusMaster<PQ9Frame, PQ9Message> busHandler(pq9bus);
 
 // services running in the system
-TestService test;
 PingService ping;
 ResetService reset( GPIO_PORT_P4, GPIO_PIN0, GPIO_PORT_P4, GPIO_PIN2 );
 HousekeepingService<OBCTelemetryContainer> hk;
-
 #ifndef SW_VERSION
 SoftwareUpdateService SWupdate(fram);
 #else
 SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
 #endif
 
-Service* services[] = { &ping, &reset, &hk, &test, &SWupdate };
+Service* services[] = { &ping, &reset, &hk, &SWupdate };
+
 
 // ADCS board tasks
-CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 5);
+CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 4);
 PeriodicTask timerTask(1000, periodicTask);
-PeriodicTask* periodicTasks[] = {&timerTask};
-PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 1);
-Task* tasks[] = { &timerTask, &cmdHandler };
-
-volatile bool cmdReceivedFlag = false;
-DataFrame* receivedFrame;
+StateMachine stateMachine(busHandler);
+PeriodicTask* periodicTasks[] = {&timerTask, &stateMachine};
+PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 2);
+Task* tasks[] = { &timerTask, &stateMachine, &cmdHandler };
 
 // system uptime
 unsigned long uptime = 0;
@@ -57,184 +46,14 @@ unsigned long uptime = 0;
 // TODO: remove when bug in CCS has been solved
 void receivedCommand(DataFrame &newFrame)
 {
-    cmdReceivedFlag = true;
-    receivedFrame = &newFrame;
-    cmdHandler.received(newFrame);
+    if(!busHandler.received(newFrame)){
+        cmdHandler.received(newFrame);
+    }
 }
 
 void validCmd(void)
 {
     reset.kickInternalWatchDog();
-}
-
-void pingModules()
-{
-    //serial.println("Ping COMMS!");
-
-    PQ9Frame pingFrame;
-
-    pingFrame.setSource(1);
-    pingFrame.setDestination(4); //ping COMMS
-    pingFrame.setPayloadSize(2);
-    pingFrame.getPayload()[0] = 17;
-    pingFrame.getPayload()[1] = 1;
-
-    pq9bus.transmit(pingFrame);
-    //wait for reply
-    while(cmdReceivedFlag == false);
-    cmdReceivedFlag = false;
-
-//    serial.print("Reply : ");
-//    serial.print(receivedFrame->getSource(), DEC);
-//    serial.print(" ");
-//    serial.print(receivedFrame->getPayload()[0], DEC);
-//    serial.print(" ");
-//    serial.println(receivedFrame->getPayload()[1], DEC);
-//
-//
-//    serial.println("Ping EPS!");
-    pingFrame.setSource(1);
-    pingFrame.setDestination(2); //ping EPS
-    pingFrame.setPayloadSize(2);
-    pingFrame.getPayload()[0] = 17;
-    pingFrame.getPayload()[1] = 1;
-
-    pq9bus.transmit(pingFrame);
-    //wait for reply
-    while(cmdReceivedFlag == false);
-    cmdReceivedFlag = false;
-//    serial.print("Reply : ");
-//    serial.print(receivedFrame->getSource(), DEC);
-//    serial.print(" ");
-//    serial.print(receivedFrame->getPayload()[0], DEC);
-//    serial.print(" ");
-//    serial.println(receivedFrame->getPayload()[1], DEC);
-
-}
-
-void retrieveCommCommands(){
-    PQ9Frame passFrame;
-    passFrame.setSource(1);
-
-    PQ9Frame requestFrame;
-    requestFrame.setSource(1);
-    requestFrame.setDestination(4); //ping COMMS
-    requestFrame.setPayloadSize(2);
-    requestFrame.getPayload()[0] = 20;
-    requestFrame.getPayload()[1] = 4;
-
-    bool allRetrieved = false;
-    while(!allRetrieved){
-        pq9bus.transmit(requestFrame);
-        while(cmdReceivedFlag == false);
-        cmdReceivedFlag = false;
-        if(receivedFrame->getPayload()[1] == 0){
-            Console::log("COMMS: No more GS commands-");
-            allRetrieved = true;
-        }else if(receivedFrame->getPayload()[2+2] == 99){
-            passFrame.setDestination(receivedFrame->getPayload()[2+0]);
-            passFrame.setPayloadSize(receivedFrame->getPayload()[2+1]);
-            passFrame.setSource(1);
-            for(int p = 0; p < passFrame.getPayloadSize(); p++){
-                passFrame.getPayload()[p] = receivedFrame->getPayload()[5+p];
-            }
-
-
-
-            pq9bus.transmit(passFrame);
-            while(cmdReceivedFlag == false);
-            cmdReceivedFlag = false;
-//            serial.print("  ===> Reply: ");
-//            serial.print(receivedFrame->getDestination(), DEC);
-//            serial.print(" ");
-//            serial.print(receivedFrame->getPayloadSize(), DEC);
-//            serial.print(" ");
-//            serial.print(receivedFrame->getSource(), DEC);
-//            serial.print(" ");
-//            for(int k = 0; k < receivedFrame->getPayloadSize(); k++){
-//                serial.print(receivedFrame->getPayload()[k], DEC);
-//                serial.print(" ");
-//            }
-//
-//            serial.println("");
-
-
-
-        }
-    }
-}
-
-void retrieveCommCommandsReply(){
-    PQ9Frame passFrame;
-    passFrame.setSource(1);
-
-    PQ9Frame requestFrame;
-    requestFrame.setSource(1);
-    requestFrame.setDestination(4); //ping COMMS
-    requestFrame.setPayloadSize(2);
-    requestFrame.getPayload()[0] = 20;
-    requestFrame.getPayload()[1] = 4;
-
-    bool allRetrieved = false;
-    while(!allRetrieved){
-        pq9bus.transmit(requestFrame);
-        while(cmdReceivedFlag == false);
-        cmdReceivedFlag = false;
-        if(receivedFrame->getPayload()[1] == 0){
-            Console::log("COMMS: No more GS commands-");
-            allRetrieved = true;
-        }else if(receivedFrame->getPayload()[2+2] == 99){
-            passFrame.setDestination(receivedFrame->getPayload()[2+0]);
-            passFrame.setPayloadSize(receivedFrame->getPayload()[2+1]);
-            passFrame.setSource(1);
-            for(int p = 0; p < passFrame.getPayloadSize(); p++){
-                passFrame.getPayload()[p] = receivedFrame->getPayload()[5+p];
-            }
-
-//            serial.print("Reply : ");
-//                       for(int x = 0; x < passFrame.getPayloadSize(); x++){
-//                           serial.print(passFrame.getPayload()[x], DEC);
-//                           serial.print(" ");
-//                       }
-//                       serial.println("");
-
-
-            pq9bus.transmit(passFrame);
-            while(cmdReceivedFlag == false);
-            cmdReceivedFlag = false;
-
-            passFrame.setDestination(4);
-            passFrame.setSource(1);
-            passFrame.setPayloadSize(receivedFrame->getPayloadSize()+6);
-            passFrame.getPayload()[0] = 20;
-            passFrame.getPayload()[1] = 3;
-            passFrame.getPayload()[2] = receivedFrame->getPayloadSize()+3;
-            for(int y = 0; y < receivedFrame->getPayloadSize()+3; y++){
-                passFrame.getPayload()[3+y] = receivedFrame->getFrame()[y];
-            }
-
-            pq9bus.transmit(passFrame);
-            while(cmdReceivedFlag == false);
-            cmdReceivedFlag = false;
-
-//            serial.print("  ===> Reply: ");
-//            serial.print(receivedFrame->getDestination(), DEC);
-//            serial.print(" ");
-//            serial.print(receivedFrame->getPayloadSize(), DEC);
-//            serial.print(" ");
-//            serial.print(receivedFrame->getSource(), DEC);
-//            serial.print(" ");
-//            for(int k = 0; k < receivedFrame->getPayloadSize(); k++){
-//                serial.print(receivedFrame->getPayload()[k], DEC);
-//                serial.print(" ");
-//            }
-//
-//            serial.println("");
-
-
-
-        }
-    }
 }
 
 void periodicTask()
@@ -345,5 +164,5 @@ void main(void)
         Console::log("SW_VERSION: %s", (const char*)xtr(SW_VERSION));
     }
 
-    TaskManager::start(tasks, 1);
+    TaskManager::start(tasks, 3);
 }
