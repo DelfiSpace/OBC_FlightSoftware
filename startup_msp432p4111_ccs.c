@@ -190,13 +190,8 @@ void Reset_Handler(void)
 
     configVectorTable();
     /* Jump to the CCS C Initialization Routine. */
-    if((uint32_t)SELECTED_SLOT == 0x0){
-        __asm("    .global _c_int00\n"
-              "    b.w     _c_int00");
-    }else{
-        __asm("    .global _c_int00_noinit\n"
-              "    b.w     _c_int00_noinit");
-    }
+    __asm("    .global _c_int00\n"
+          "    b.w     _c_int00");
 }
 
 void configVectorTable(void)
