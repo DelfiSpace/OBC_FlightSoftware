@@ -63,6 +63,7 @@ void periodicTask()
 {
     // increase the timer, this happens every second
     uptime++;
+    totalUptime += 1;
 
     // collect telemetry
     hk.acquireTelemetry(acquireTelemetry);

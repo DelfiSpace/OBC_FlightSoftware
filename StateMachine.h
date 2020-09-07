@@ -17,6 +17,7 @@
 
 #define RADIO_SERVICE 20
 #define BUS_SERVICE 1
+#define ACTIVATION_TIME 1*60
 
 enum OBCState {Activation = 0x00, Deploy = 0x01, Normal = 0x02 };
 

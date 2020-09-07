@@ -7,9 +7,10 @@
 #include "StateMachine.h"
 
 StateMachine* _stub;
+extern FRAMVar<unsigned long> totalUptime;
 
 StateMachine::StateMachine(BusMaster<PQ9Frame, PQ9Message> &busMaster, InternalCommandHandler<PQ9Frame, PQ9Message> &internalCmdHandler)
-: PeriodicTask(1000*10, [](){_stub->StateMachineRun();})
+: PeriodicTask(1000, [](){_stub->StateMachineRun();})
 {
     _stub = this;
     busHandler = &busMaster;
@@ -32,14 +33,15 @@ void StateMachine::StateMachineRun()
         processCOMMBuffer();
 
     }else{
-        Console::log("StateMachine :: Normal Mode");
         //get Messages from COMMS:
         unsigned char payload = 3; //command to ask the nr of messages
         rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, RADIO_SERVICE, MsgType::Request, 200);
         if(rcvdMsg){
             if(rcvdMsg->getDataPayload()[0] == 0){
                 MsgsInQue = rcvdMsg->getDataPayload()[1];
-                Console::log("getRadioCommands: %d", MsgsInQue);
+                if(MsgsInQue){
+                    Console::log("Radio Commands In Que: %d", MsgsInQue);
+                }
             }else{
 //                Console::log("getRadioCommands: FAIL");
             }
@@ -50,10 +52,19 @@ void StateMachine::StateMachineRun()
         switch(currentState)
         {
         case OBCState::Activation:
+            Console::log("Total Uptime: %d", (unsigned long)totalUptime);
+            if((unsigned long) totalUptime > ACTIVATION_TIME){
+                Console::log("Activation Timer Expired! -> Deploy");
+                currentState = OBCState::Deploy;
+            }
             break;
         case OBCState::Deploy:
+            Console::log("Deploy Mode -> Turn on ADB");
+            PowerBusControl(true, true, false, false);
+            currentState = OBCState::Normal;
             break;
         case OBCState::Normal:
+            PowerBusControl(true, true, false, false);
             break;
         }
 
@@ -146,7 +157,6 @@ void StateMachine::processCOMMBuffer(){
 bool StateMachine::PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line4)
 {
     // Define relevant hex values corresponding to EPS command over bus.
-    char request = 0x01;
     char V1 = 0x01;
     char V2 = 0x02;
     char V3 = 0x03;
@@ -156,16 +166,16 @@ bool StateMachine::PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line
     uint8_t msgPayload[2];
     msgPayload[0] = V1;
     msgPayload[1] = Line1 ? 0x01:0x00;
-    PQ9Message* Succes1 = busHandler->RequestReply(Address::EPS, 4, msgPayload, BUS_SERVICE, MsgType::Request, 500);
+    PQ9Message* Succes1 = busHandler->RequestReply(Address::EPS, 2, msgPayload, BUS_SERVICE, MsgType::Request, 500);
     msgPayload[0] = V2;
     msgPayload[1] = Line2 ? 0x01:0x00;
-    PQ9Message* Succes2 = busHandler->RequestReply(Address::EPS, 4, msgPayload, BUS_SERVICE, MsgType::Request, 500);
+    PQ9Message* Succes2 = busHandler->RequestReply(Address::EPS, 2, msgPayload, BUS_SERVICE, MsgType::Request, 500);
     msgPayload[0] = V3;
     msgPayload[1] = Line3 ? 0x01:0x00;
-    PQ9Message* Succes3 = busHandler->RequestReply(Address::EPS, 4, msgPayload, BUS_SERVICE, MsgType::Request, 500);
+    PQ9Message* Succes3 = busHandler->RequestReply(Address::EPS, 2, msgPayload, BUS_SERVICE, MsgType::Request, 500);
     msgPayload[0] = V4;
     msgPayload[1] = Line4 ? 0x01:0x00;
-    PQ9Message* Succes4 = busHandler->RequestReply(Address::EPS, 4, msgPayload, BUS_SERVICE, MsgType::Request, 500);
+    PQ9Message* Succes4 = busHandler->RequestReply(Address::EPS, 2, msgPayload, BUS_SERVICE, MsgType::Request, 500);
 
     return Succes1 && Succes2 && Succes3 && Succes4;
 }
