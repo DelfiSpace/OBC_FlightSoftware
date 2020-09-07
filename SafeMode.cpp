@@ -7,7 +7,7 @@
 
 #define SAFEMODE_DEBUG
 
-#include "PowerBusControl.h" // Makes line control easier.
+//#include "PowerBusControl.h" // Makes line control easier.
 #include "OBCTelemetryContainer.h"
 #ifdef SAFEMODE_DEBUG
     #include "Console.h"
@@ -29,7 +29,7 @@ void SafeMode(OBCTelemetryContainer *OBCContainer)
 
     // === SfM-OBC-2 ===
     // Command EPS to turn off other power lines except V1
-    PowerBusControl(1,0,0,0);
+//    PowerBusControl(1,0,0,0);
 
     #ifdef SAFEMODE_DEBUG
         Console::log("LineControl(1,0,0,0) called.\n");

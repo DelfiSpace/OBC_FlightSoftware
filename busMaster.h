@@ -49,11 +49,15 @@ class BusMaster{
          */
         bool received(DataFrame &newFrame )
         {
+            Frame_Type tmpFrame;
+            rxFrame.copy(tmpFrame);
             newFrame.copy(rxFrame);
-            if(rxMsg.getMessageType() == SERVICE_RESPONSE_REPLY){
+            if(rxMsg.getMessageType() == MsgType::Reply && rxFrame.getSource() == txFrame.getDestination()){
                 cmdReceivedFlag = true;
+//                Console::log("Reply!");
                 return true;
             }else{
+                tmpFrame.copy(rxFrame);
                 return false;
             }
         };

@@ -64,7 +64,6 @@ void StateMachine::StateMachineRun()
             currentState = OBCState::Normal;
             break;
         case OBCState::Normal:
-            PowerBusControl(true, true, false, false);
             break;
         }
 

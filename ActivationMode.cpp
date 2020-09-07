@@ -5,7 +5,7 @@
  *      Author: tom-h
  */
 
-#include "PowerBusControl.h"
+//#include "PowerBusControl.h"
 #include "OBCTelemetryContainer.h"
 
 /**
@@ -18,7 +18,7 @@ void ActivationMode(OBCTelemetryContainer *OBCContainer)
 
     //Command EPS to turn off all power lines except V1, return true if a fault occurs
     //TODO: Possibly do something if error occurs
-    PowerBusControl(1, 0, 0, 0);
+//    PowerBusControl(1, 0, 0, 0);
 
     //check if current total uptime is longer than the specified time for deployment
     if (OBCContainer->getTotalUpTime() > OBCContainer->getEndOfActivation())
