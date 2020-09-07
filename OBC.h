@@ -37,6 +37,9 @@
 #include "StateMachine.h"
 #include "OBCTelemetryContainer.h"
 #include "BusMaster.h"
+#include "FRAMService.h"
+#include "FRAMVar.h"
+#include "FRAMMap.h"
 
 #define FCLOCK 48000000
 

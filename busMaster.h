@@ -17,6 +17,8 @@
 typedef enum Address {OBC = 1, EPS = 2, ADB = 3, COMMS = 4,
     ADCS = 5, PROP = 6, DEBUG = 7, EGSE = 8, HPI = 100} Address;
 
+typedef enum MsgType {Request = 0x01, Reply = 0x02 } MsgType;
+
 template <class Frame_Type, class Message_Type>
 class BusMaster{
     public:

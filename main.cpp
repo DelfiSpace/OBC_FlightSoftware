@@ -20,6 +20,7 @@ PQ9Bus pq9bus(3, GPIO_PORT_P9, GPIO_PIN0);
 BusMaster<PQ9Frame, PQ9Message> busHandler(pq9bus);
 
 // services running in the system
+FRAMService framServ(fram);
 PingService ping;
 ResetService reset( GPIO_PORT_P4, GPIO_PIN0, GPIO_PORT_P4, GPIO_PIN2 );
 HousekeepingService<OBCTelemetryContainer> hk;
@@ -29,12 +30,12 @@ SoftwareUpdateService SWupdate(fram);
 SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
 #endif
 
-Service* services[] = { &ping, &reset, &hk, &SWupdate };
+Service* services[] = { &ping, &reset, &hk, &SWupdate, &framServ };
 
 
 // ADCS board tasks
-CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 4);
-InternalCommandHandler<PQ9Frame,PQ9Message> internalCmdHandler(services, 4);
+CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 5);
+InternalCommandHandler<PQ9Frame,PQ9Message> internalCmdHandler(services, 5);
 PeriodicTask timerTask(1000, periodicTask);
 StateMachine stateMachine(busHandler, internalCmdHandler);
 PeriodicTask* periodicTasks[] = {&timerTask, &stateMachine};
@@ -43,6 +44,7 @@ Task* tasks[] = { &timerTask, &stateMachine, &cmdHandler };
 
 // system uptime
 unsigned long uptime = 0;
+FRAMVar<unsigned long> totalUptime;
 
 // TODO: remove when bug in CCS has been solved
 void receivedCommand(DataFrame &newFrame)
@@ -119,7 +121,10 @@ void main(void)
 
     // Initialize SPI master
     spi.initMaster(DSPI::MODE0, DSPI::MSBFirst, 1000000);
+
+    //init FRAM and FRAM Variables
     fram.init();
+    totalUptime.init(fram, FRAM_TOTAL_UPTIME);
 
     // initialize the shunt resistor
     powerBus.setShuntResistor(40);

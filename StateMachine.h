@@ -15,6 +15,11 @@
 #include "PQ9Message.h"
 #include "InternalCommandHandler.h"
 
+#define RADIO_SERVICE 20
+#define BUS_SERVICE 1
+
+enum OBCState {Activation = 0x00, Deploy = 0x01, Normal = 0x02 };
+
 class StateMachine : public PeriodicTask
 {
 public:
@@ -24,12 +29,15 @@ public:
 
 private:
     void processCOMMBuffer();
+    bool PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line4);
 
     BusMaster<PQ9Frame, PQ9Message>* busHandler;
     InternalCommandHandler<PQ9Frame, PQ9Message>* intCmdHandler;
     PQ9Message* rcvdMsg;
     int MsgsInQue = 0;
     bool runPeriodic = false; //safety flag to make sure the periodic function runs.
+
+    uint8_t currentState;
 
 };
 
