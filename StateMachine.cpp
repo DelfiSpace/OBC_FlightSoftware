@@ -10,7 +10,7 @@ StateMachine* _stub;
 extern FRAMVar<unsigned long> totalUptime;
 
 StateMachine::StateMachine(BusMaster<PQ9Frame, PQ9Message> &busMaster, InternalCommandHandler<PQ9Frame, PQ9Message> &internalCmdHandler)
-: PeriodicTask(1000, [](){_stub->StateMachineRun();})
+: PeriodicTask(5000, [](){_stub->StateMachineRun();})
 {
     _stub = this;
     busHandler = &busMaster;
@@ -35,7 +35,7 @@ void StateMachine::StateMachineRun()
     }else{
         //get Messages from COMMS:
         unsigned char payload = 3; //command to ask the nr of messages
-        rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, RADIO_SERVICE, MsgType::Request, 200);
+        rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, ServiceNumber::Radio, MsgType::Request, 200);
         if(rcvdMsg){
             if(rcvdMsg->getDataPayload()[0] == 0){
                 MsgsInQue = rcvdMsg->getDataPayload()[1];
@@ -59,11 +59,33 @@ void StateMachine::StateMachineRun()
             }
             break;
         case OBCState::Deploy:
-            Console::log("Deploy Mode -> Turn on ADB");
-            PowerBusControl(true, true, false, false);
+            Console::log("Get EPS Telemetry");
+            getTelemetry(Address::EPS, EPSContainer);
+            Console::log("Battery INA Status: %s | Battery GG Status: %s", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryGGStatus() ? "ACTIVE" : "ERROR");
+
+            short batteryVoltage;
+            if(EPSContainer.getBatteryGGStatus()){
+                batteryVoltage = EPSContainer.getBatteryGGVoltage();
+            }else if(EPSContainer.getBatteryINAStatus()){
+                batteryVoltage = EPSContainer.getBatteryINAVoltage();
+            }else{
+                //both sensors are dead...
+                batteryVoltage = 3500;
+            }
+
+            if(batteryVoltage > DEPLOYMENT_VOLTAGE){
+                Console::log("Voltage: %d mv -> DeployState: Turn on ADB", batteryVoltage);
+                PowerBusControl(true, true, false, false);
+//                todo;
+//                PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, dataPayload, Service, Message_type, timeLimitMS)
+                Console::log("DeployState: DeployCommand");
+            }
+
             currentState = OBCState::Normal;
             break;
         case OBCState::Normal:
+            getTelemetry(Address::EPS, EPSContainer);
+            Console::log("Battery INA Status: %s | Voltage %d mV", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
             break;
         }
 
@@ -87,7 +109,7 @@ void StateMachine::StateMachineRun()
 void StateMachine::processCOMMBuffer(){
     //get Message from comms:
     uint8_t payload = 4;
-    rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, RADIO_SERVICE, MsgType::Request, 200);
+    rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, ServiceNumber::Radio, MsgType::Request, 200);
     if(rcvdMsg){
         if(rcvdMsg->getDataPayload()[0] == 0 && rcvdMsg->getPayloadSize() > 7){ //Command = OK  //
             uint8_t commandID = rcvdMsg->getDataPayload()[1];
@@ -128,7 +150,7 @@ void StateMachine::processCOMMBuffer(){
                 for(int j = 0; j < rcvdMsg->getPayloadSize(); j++){
                     radioReply[7+j] = rcvdMsg->getDataPayload()[j];
                 }
-                busHandler->RequestReply(Address::COMMS, rcvdMsg->getPayloadSize() + 7, radioReply, RADIO_SERVICE, MsgType::Request, 200);
+                busHandler->RequestReply(Address::COMMS, rcvdMsg->getPayloadSize() + 7, radioReply, ServiceNumber::Radio, MsgType::Request, 200);
 //                    Console::log("%d %d %d %d %d %d %d %d", radioReply[1], radioReply[2], radioReply[3], radioReply[4], radioReply[5], radioReply[6], radioReply[7], radioReply[8]);
             }else{
                 Console::log("Command Unsuccesful!");
@@ -143,13 +165,13 @@ void StateMachine::processCOMMBuffer(){
                 radioReply[5] = 0; //service
                 radioReply[6] = 2; //Reply
                 radioReply[7] = 1; //NO_RESPONSE
-                busHandler->RequestReply(Address::COMMS, 8, radioReply, RADIO_SERVICE, MsgType::Request, 200);
+                busHandler->RequestReply(Address::COMMS, 8, radioReply, ServiceNumber::Radio, MsgType::Request, 200);
             }
         }
     }
     //pop Message from stack:
     payload = 5;
-    busHandler->RequestReply(Address::COMMS, 1, &payload, RADIO_SERVICE, MsgType::Request, 200);
+    busHandler->RequestReply(Address::COMMS, 1, &payload, ServiceNumber::Radio, MsgType::Request, 200);
     MsgsInQue--;
 }
 
@@ -165,16 +187,29 @@ bool StateMachine::PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line
     uint8_t msgPayload[2];
     msgPayload[0] = V1;
     msgPayload[1] = Line1 ? 0x01:0x00;
-    PQ9Message* Succes1 = busHandler->RequestReply(Address::EPS, 2, msgPayload, BUS_SERVICE, MsgType::Request, 500);
+    PQ9Message* Succes1 = busHandler->RequestReply(Address::EPS, 2, msgPayload, ServiceNumber::PowerBus, MsgType::Request, 500);
     msgPayload[0] = V2;
     msgPayload[1] = Line2 ? 0x01:0x00;
-    PQ9Message* Succes2 = busHandler->RequestReply(Address::EPS, 2, msgPayload, BUS_SERVICE, MsgType::Request, 500);
+    PQ9Message* Succes2 = busHandler->RequestReply(Address::EPS, 2, msgPayload, ServiceNumber::PowerBus, MsgType::Request, 500);
     msgPayload[0] = V3;
     msgPayload[1] = Line3 ? 0x01:0x00;
-    PQ9Message* Succes3 = busHandler->RequestReply(Address::EPS, 2, msgPayload, BUS_SERVICE, MsgType::Request, 500);
+    PQ9Message* Succes3 = busHandler->RequestReply(Address::EPS, 2, msgPayload, ServiceNumber::PowerBus, MsgType::Request, 500);
     msgPayload[0] = V4;
     msgPayload[1] = Line4 ? 0x01:0x00;
-    PQ9Message* Succes4 = busHandler->RequestReply(Address::EPS, 2, msgPayload, BUS_SERVICE, MsgType::Request, 500);
+    PQ9Message* Succes4 = busHandler->RequestReply(Address::EPS, 2, msgPayload, ServiceNumber::PowerBus, MsgType::Request, 500);
 
     return Succes1 && Succes2 && Succes3 && Succes4;
+}
+
+bool StateMachine::getTelemetry(unsigned char destination, TelemetryContainer &targetContainer){
+    PQ9Message* housekeepingMsg = busHandler->RequestReply(destination, 0, 0, ServiceNumber::Housekeeping, MsgType::Request, 500);
+    if(housekeepingMsg){
+        for(int i=0; i <housekeepingMsg->getPayloadSize(); i++){
+            targetContainer.getArray()[i] = housekeepingMsg->getDataPayload()[i];
+        }
+//        Console::log("Tele %d %d %d %d %d", housekeepingMsg->getDataPayload()[0], housekeepingMsg->getDataPayload()[1], housekeepingMsg->getDataPayload()[2], housekeepingMsg->getDataPayload()[3], housekeepingMsg->getDataPayload()[4]);
+        return true;
+    }else{
+        return false;
+    }
 }
