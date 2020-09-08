@@ -9,13 +9,17 @@
 StateMachine* _stub;
 extern FRAMVar<unsigned long> totalUptime;
 
-StateMachine::StateMachine(BusMaster<PQ9Frame, PQ9Message> &busMaster, InternalCommandHandler<PQ9Frame, PQ9Message> &internalCmdHandler)
-: PeriodicTask(5000, [](){_stub->StateMachineRun();})
+StateMachine::StateMachine(MB85RS &fram_in, BusMaster<PQ9Frame, PQ9Message> &busMaster, InternalCommandHandler<PQ9Frame, PQ9Message> &internalCmdHandler)
+: PeriodicTask(1000, [](){_stub->StateMachineRun();})
 {
     _stub = this;
     busHandler = &busMaster;
     intCmdHandler = &internalCmdHandler;
-    currentState = OBCState::Activation;
+    fram = &fram_in;
+}
+
+void StateMachine::init(){
+    this->currentState.init(*fram, FRAM_OBC_STATE, true, true);
 }
 
 bool StateMachine::notified(){
@@ -49,7 +53,7 @@ void StateMachine::StateMachineRun()
 
 
         //STATE MACHINE HERE
-        switch(currentState)
+        switch((uint8_t)currentState)
         {
         case OBCState::Activation:
             Console::log("Total Uptime: %d", (unsigned long)totalUptime);
@@ -78,15 +82,37 @@ void StateMachine::StateMachineRun()
                 PowerBusControl(true, true, false, false);
 //                todo;
 //                PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, dataPayload, Service, Message_type, timeLimitMS)
-                Console::log("DeployState: DeployCommand");
-            }
+                getTelemetry(Address::ADB, ADBContainer);
+                short adbTemperature = ADBContainer.getTemperature()/10;
+                Console::log("ADB Temperature: %s%d C", (adbTemperature<0)?"-":"", (adbTemperature<0)?-adbTemperature:adbTemperature);
+                if(adbTemperature > 0 || (unsigned long) totalUptime > ACTIVATION_TIME + MAX_ADB_TEMPERATURE_WAIT){
+                    Console::log("DeployState: DeployCommand");
+                    uint8_t deployPayload = 1;
+                    PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 200);
 
-            currentState = OBCState::Normal;
+                    if(reply){
+                        if(reply->getDataPayload()[1] == 56){
+                            Console::log("Command Succesful: ALREADY_BURNING");
+                        }else if(reply->getDataPayload()[1] == 57){
+                            Console::log("Command Succesful: FULLY_DEPLOYED");
+                            currentState = OBCState::Normal;
+                        }else if(reply->getDataPayload()[1] == 0){
+                            Console::log("Command Succesful: STARTING_BURN");
+                        }else{
+                            Console::log("Command Succesful: %d %d %d", reply->getDataPayload()[0], reply->getDataPayload()[1], reply->getDataPayload()[2]);
+                        }
+                    }else{
+                        Console::log("Command FAILED");
+                    }
+                }
+            }
             break;
         case OBCState::Normal:
             getTelemetry(Address::EPS, EPSContainer);
-            Console::log("Battery INA Status: %s | Voltage %d mV", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
+            Console::log("NORMAL STATE: Battery INA Status: %s | Voltage %d mV", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
             break;
+        default:
+            currentState = OBCState::Activation;
         }
 
 

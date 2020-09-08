@@ -14,21 +14,28 @@
 #include "PQ9Frame.h"
 #include "PQ9Message.h"
 #include "InternalCommandHandler.h"
-#include "EPSTelemetryContainer.h"
+#include "Telemetry/EPSTelemetryContainer.h"
+#include "Telemetry/ADBTelemetryContainer.h"
+#include "MB85RS.h"
+#include "FRAMBackedVar.h"
+#include "FRAMMap.h"
 
 
+#define ACTIVATION_TIME             1*60
+#define MAX_ADB_TEMPERATURE_WAIT    1*60
+#define DEPLOYMENT_VOLTAGE          3200
 
-#define ACTIVATION_TIME         1*60
-#define DEPLOYMENT_VOLTAGE      3200
+#define FRAM_OBC_STATE          FRAM_DEVICE_SPECIFIC_SPACE
 
 enum OBCState {Activation = 0x00, Deploy = 0x01, Normal = 0x02 };
 
 class StateMachine : public PeriodicTask
 {
 public:
-    StateMachine(BusMaster<PQ9Frame, PQ9Message> &busMaster, InternalCommandHandler<PQ9Frame, PQ9Message> &internalCmdHandler);
+    StateMachine(MB85RS &fram, BusMaster<PQ9Frame, PQ9Message> &busMaster, InternalCommandHandler<PQ9Frame, PQ9Message> &internalCmdHandler);
     void StateMachineRun();
     virtual bool notified();
+    void init();
 
 private:
     void processCOMMBuffer();
@@ -37,13 +44,17 @@ private:
 
     BusMaster<PQ9Frame, PQ9Message>* busHandler;
     InternalCommandHandler<PQ9Frame, PQ9Message>* intCmdHandler;
+    MB85RS* fram;
+
     PQ9Message* rcvdMsg;
     int MsgsInQue = 0;
     bool runPeriodic = false; //safety flag to make sure the periodic function runs.
 
-    uint8_t currentState;
+    FRAMBackedVar<uint8_t> currentState;
 
     EPSTelemetryContainer EPSContainer;
+    ADBTelemetryContainer ADBContainer;
+
 
 };
 

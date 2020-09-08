@@ -37,7 +37,7 @@ Service* services[] = { &ping, &reset, &hk, &SWupdate, &framServ };
 CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 5);
 InternalCommandHandler<PQ9Frame,PQ9Message> internalCmdHandler(services, 5);
 PeriodicTask timerTask(1000, periodicTask);
-StateMachine stateMachine(busHandler, internalCmdHandler);
+StateMachine stateMachine(fram, busHandler, internalCmdHandler);
 PeriodicTask* periodicTasks[] = {&timerTask, &stateMachine};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 2);
 Task* tasks[] = { &timerTask, &stateMachine, &cmdHandler };
@@ -170,6 +170,7 @@ void main(void)
     if(HAS_SW_VERSION == 1){
         Console::log("SW_VERSION: %s", (const char*)xtr(SW_VERSION));
     }
+    stateMachine.init();
 
     TaskManager::start(tasks, 3);
 }

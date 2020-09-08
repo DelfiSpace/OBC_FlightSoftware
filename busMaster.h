@@ -19,7 +19,7 @@ typedef enum Address {OBC = 1, EPS = 2, ADB = 3, COMMS = 4,
 
 typedef enum MsgType {Request = 0x01, Reply = 0x02 } MsgType;
 
-typedef enum ServiceNumber {PowerBus = 0x01, Housekeeping = 0x03, Radio = 0x20} ServiceNumber;
+typedef enum ServiceNumber {DeployService = 99, PowerBus = 0x01, Housekeeping = 3, Radio = 20} ServiceNumber;
 
 template <class Frame_Type, class Message_Type>
 class BusMaster{
