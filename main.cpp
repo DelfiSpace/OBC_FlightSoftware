@@ -62,7 +62,7 @@ void validCmd(void)
 void periodicTask()
 {
     // increase the timer, this happens every second
-    uptime++;
+    uptime += 1;
     totalUptime += 1;
 
     // collect telemetry
@@ -86,15 +86,22 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
 {
     unsigned short v;
     signed short i, t;
+    unsigned char uc;
 
-    // Update time
-    tc->setUpTime(tc->getUpTime() + 1);
-    tc->setTotalUpTime(tc->getTotalUpTime() + 1);
+    //HouseKeeping Header:
+    tc->setStatus(Bootloader::getCurrentSlot());
+    fram.read(FRAM_RESET_COUNTER + Bootloader::getCurrentSlot(), &uc, 1);
+    tc->setBootCounter(uc);
+    tc->setResetCause(hwMonitor.getResetStatus());
+    tc->setUptime(uptime);
+    tc->setTotalUptime((unsigned long) totalUptime);
+    tc->setVersionNumber(2);
+    tc->setMCUTemp(hwMonitor.getMCUTemp());
 
     // measure the power bus (INA226)
-    tc->setBusStatus((!powerBus.getVoltage(v)) & (!powerBus.getCurrent(i)));
-    tc->setBusVoltage(v);
-    tc->setBusCurrent(i);
+    tc->setINAStatus((!powerBus.getVoltage(v)) & (!powerBus.getCurrent(i)));
+    tc->setVoltage(v);
+    tc->setCurrent(i);
 
     // acquire board temperature (TMP100)
     tc->setTMPStatus(!temp.getTemperature(t));

@@ -21,13 +21,13 @@ void ActivationMode(OBCTelemetryContainer *OBCContainer)
 //    PowerBusControl(1, 0, 0, 0);
 
     //check if current total uptime is longer than the specified time for deployment
-    if (OBCContainer->getTotalUpTime() > OBCContainer->getEndOfActivation())
-    {
-        OBCContainer->setMode(DEPLOYMENTMODE);
-        return;
-    }
-    else
-        return;
+//    if (OBCContainer->getTotalUpTime() > OBCContainer->getEndOfActivation())
+//    {
+//        OBCContainer->setMode(DEPLOYMENTMODE);
+//        return;
+//    }
+//    else
+//        return;
 }
 
 
