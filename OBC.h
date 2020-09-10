@@ -40,6 +40,11 @@
 #include "FRAMService.h"
 #include "FRAMVar.h"
 #include "FRAMMap.h"
+#include "SDCard.h"
+#include "LittleFS.h"
+#include "DSPI_A.h"
+#include "TelemetryRequestService.h"
+#include "Telemetry/EPSTelemetryContainer.h"
 
 #define FCLOCK 48000000
 

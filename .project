@@ -9,6 +9,7 @@
 		<project>INA226</project>
 		<project>MB85RS</project>
 		<project>PQ9Bus</project>
+		<project>SDCard</project>
 		<project>TMP100</project>
 	</projects>
 	<buildSpec>

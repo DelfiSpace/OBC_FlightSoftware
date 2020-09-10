@@ -19,11 +19,13 @@
 #include "MB85RS.h"
 #include "FRAMBackedVar.h"
 #include "FRAMMap.h"
+#include "LittleFS.h"
 
 
 #define ACTIVATION_TIME             1*60
 #define MAX_ADB_TEMPERATURE_WAIT    1*60
 #define DEPLOYMENT_VOLTAGE          3200
+#define LOG_INTERVAL                10
 
 #define FRAM_OBC_STATE          FRAM_DEVICE_SPECIFIC_SPACE
 
@@ -51,6 +53,13 @@ private:
     bool runPeriodic = false; //safety flag to make sure the periodic function runs.
 
     FRAMBackedVar<uint8_t> currentState;
+
+    LFSTask logTask;
+    lfs_file_t logFile;
+    uint8_t logFileBuffer[512];
+    const struct lfs_file_config logFilecfg = {.buffer=logFileBuffer};
+
+    unsigned long correctedUptime;
 
     EPSTelemetryContainer EPSContainer;
     ADBTelemetryContainer ADBContainer;

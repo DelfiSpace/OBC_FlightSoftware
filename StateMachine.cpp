@@ -5,9 +5,13 @@
  *      Author: tom-h
  */
 #include "StateMachine.h"
+#include <stdio.h>
 
 StateMachine* _stub;
 extern FRAMVar<unsigned long> totalUptime;
+extern LittleFS fs;
+
+uint8_t tempBufferd[5];
 
 StateMachine::StateMachine(MB85RS &fram_in, BusMaster<PQ9Frame, PQ9Message> &busMaster, InternalCommandHandler<PQ9Frame, PQ9Message> &internalCmdHandler)
 : PeriodicTask(1000, [](){_stub->StateMachineRun();})
@@ -16,6 +20,10 @@ StateMachine::StateMachine(MB85RS &fram_in, BusMaster<PQ9Frame, PQ9Message> &bus
     busHandler = &busMaster;
     intCmdHandler = &internalCmdHandler;
     fram = &fram_in;
+
+    logFile.cfg = &logFilecfg;
+    logTask.taskFile = &logFile;
+    logTask.taskCompleted = true; //initialize with completed, as it is not running.
 }
 
 void StateMachine::init(){
@@ -51,6 +59,59 @@ void StateMachine::StateMachineRun()
             }
         }
 
+
+        //LOGGING OPERATION
+
+        //correction on uptime race-condition
+        if((unsigned long) totalUptime == correctedUptime){
+            //same time twice, increase with 1
+            correctedUptime++;
+        }else if((unsigned long) totalUptime - correctedUptime == 2){
+            //skipped one second
+            correctedUptime = (unsigned long) totalUptime - 1;
+        }else{
+            correctedUptime = (unsigned long) totalUptime;
+        }
+
+
+        if(!fs._mounted){
+            Console::log("FS NOT MOUNTED!");
+        }
+        if((unsigned long) correctedUptime % LOG_INTERVAL == 0 && fs._mounted){
+            if(logTask.taskCompleted){
+                if(logTask.taskResult){
+                    Console::log("##### EPSLogging Error?? : -%d", -logTask.taskResult);
+                }
+
+
+                char folderbuf[64];
+                snprintf(folderbuf, sizeof(folderbuf), "LOG");
+                fs.mkdir(folderbuf);
+                snprintf(folderbuf, sizeof(folderbuf), "LOG/%d", (unsigned long)correctedUptime/100000);
+                fs.mkdir(folderbuf);
+                snprintf(folderbuf, sizeof(folderbuf), "LOG/%d/%d", (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000);
+                fs.mkdir(folderbuf);
+
+                snprintf(logTask.taskNameBuf, sizeof(logTask.taskNameBuf), "LOG/%d/%d/EPS_%d", (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000, (unsigned long)correctedUptime);
+                logTask.taskOperation = FileSystemOperation::OWC;
+                logTask.taskCompleted = false;
+                logTask.taskSize = EPS_CONTAINER_SIZE;
+                logTask.taskFlags = LFS_O_RDWR | LFS_O_CREAT | LFS_O_APPEND;
+                logTask.taskArray = EPSContainer.getArray();
+
+                int err = fs.queTask(logTask);
+//                int err = fs.file_open_write_close_async(namebuf, LFS_O_RDWR | LFS_O_CREAT | LFS_O_APPEND, EPSContainer.getArray(), 111);
+                if(err != 1){
+                    Console::log("LFS QUE FULL");
+                }
+                Console::log("EPSUptime: %d", EPSContainer.getUptime());
+                Console::log("Creating File: %s with Telemetry Size: %d", logTask.taskNameBuf, logTask.taskSize);
+            }
+            else
+            {
+                Console::log("LittleFS too busy! (err:-%d | op:%d)", -fs._err, fs.curOperation);
+            }
+        }
 
         //STATE MACHINE HERE
         switch((uint8_t)currentState)
@@ -109,7 +170,7 @@ void StateMachine::StateMachineRun()
             break;
         case OBCState::Normal:
             getTelemetry(Address::EPS, EPSContainer);
-            Console::log("NORMAL STATE: Battery INA Status: %s | Voltage %d mV", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
+            Console::log("NORMAL STATE tUt:%d | Battery INA Status: %s | Voltage %d mV", (unsigned long)correctedUptime, EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
             break;
         default:
             currentState = OBCState::Activation;

@@ -19,7 +19,13 @@ Bootloader bootLoader = Bootloader(fram);
 PQ9Bus pq9bus(3, GPIO_PORT_P9, GPIO_PIN0);
 BusMaster<PQ9Frame, PQ9Message> busHandler(pq9bus);
 
+// SD CARD
+DSPI_A SPISD;
+SDCard sdcard(&SPISD, GPIO_PORT_P2, GPIO_PIN0);
+LittleFS fs;
+
 // services running in the system
+TelemetryRequestService tlmReqServ(fs, sdcard);
 FRAMService framServ(fram);
 PingService ping;
 ResetService reset( GPIO_PORT_P4, GPIO_PIN0, GPIO_PORT_P4, GPIO_PIN2 );
@@ -30,21 +36,24 @@ SoftwareUpdateService SWupdate(fram);
 SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
 #endif
 
-Service* services[] = { &ping, &reset, &hk, &SWupdate, &framServ };
+Service* services[] = { &ping, &reset, &hk, &SWupdate, &framServ, &tlmReqServ };
 
 
-// ADCS board tasks
-CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 5);
-InternalCommandHandler<PQ9Frame,PQ9Message> internalCmdHandler(services, 5);
+// OBC board tasks
+CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 6);
+InternalCommandHandler<PQ9Frame,PQ9Message> internalCmdHandler(services, 6);
 PeriodicTask timerTask(1000, periodicTask);
 StateMachine stateMachine(fram, busHandler, internalCmdHandler);
 PeriodicTask* periodicTasks[] = {&timerTask, &stateMachine};
 PeriodicTaskNotifier taskNotifier = PeriodicTaskNotifier(periodicTasks, 2);
-Task* tasks[] = { &timerTask, &stateMachine, &cmdHandler };
+Task* tasks[] = { &timerTask, &stateMachine, &cmdHandler, &fs };
 
 // system uptime
 unsigned long uptime = 0;
 FRAMVar<unsigned long> totalUptime;
+
+//Telemetry Container Buffers
+EPSTelemetryContainer EPSTlmBuffer;
 
 // TODO: remove when bug in CCS has been solved
 void receivedCommand(DataFrame &newFrame)
@@ -74,6 +83,7 @@ void periodicTask()
 
     // kick hardware watch-dog after every telemetry collection happens
     reset.kickExternalWatchDog();
+    reset.kickInternalWatchDog();
 
     // pingFriends
 //    pingModules();
@@ -179,5 +189,21 @@ void main(void)
     }
     stateMachine.init();
 
-    TaskManager::start(tasks, 3);
+    Console::log("Configure SD-Card Pins");
+
+    //Sd On
+    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN5);
+    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN5);
+    //sd detect
+    MAP_GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN4);
+
+    int err = sdcard.init();
+    Console::log("SDCard Init: -%d",-err);
+    Console::log("Mounting SD....");
+
+//    fs.format(&sdcard);
+    fs.mount_async(&sdcard);
+
+
+    TaskManager::start(tasks, 4);
 }
