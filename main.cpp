@@ -191,20 +191,23 @@ void main(void)
     }
     stateMachine.init();
 
-    Console::log("Configure SD-Card Pins");
-
-    //Sd On
-    MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN5);
-    MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN5);
     //sd detect
     MAP_GPIO_setAsInputPin(GPIO_PORT_P2, GPIO_PIN4);
+    if(MAP_GPIO_getInputPinValue(GPIO_PORT_P2, GPIO_PIN4) == GPIO_INPUT_PIN_LOW){
+        Console::log("SDCard Present");
+        //Sd On
+        Console::log("Configure SD-Card Pins");
+        MAP_GPIO_setAsOutputPin(GPIO_PORT_P2, GPIO_PIN5);
+        MAP_GPIO_setOutputHighOnPin( GPIO_PORT_P2, GPIO_PIN5);
+        int err = sdcard.init();
+        if(err){
+        Console::log("SDCard Init: -%d",-err);
+        }
+        Console::log("Mounting SD....");
 
-    int err = sdcard.init();
-    Console::log("SDCard Init: -%d",-err);
-    Console::log("Mounting SD....");
+        fs.mount_async(&sdcard);
+    }
 
-//    fs.format(&sdcard);
-    fs.mount_async(&sdcard);
 
 
     TaskManager::start(tasks, 4);
