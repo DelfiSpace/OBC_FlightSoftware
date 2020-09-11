@@ -132,7 +132,7 @@ void StateMachine::StateMachineRun()
         switch((uint8_t)currentState)
         {
         case OBCState::Activation:
-            Console::log("Total Uptime: %d", (unsigned long)totalUptime);
+            Console::log("Activation Uptime: %d", (unsigned long)correctedUptime);
             if((unsigned long) totalUptime > ACTIVATION_TIME){
                 Console::log("Activation Timer Expired! -> Deploy");
                 currentState = OBCState::Deploy;
@@ -150,7 +150,7 @@ void StateMachine::StateMachineRun()
                 batteryVoltage = EPSContainer.getBatteryINAVoltage();
             }else{
                 //both sensors are dead...
-                batteryVoltage = 3500;
+                batteryVoltage = DEPLOYMENT_VOLTAGE + 1;
             }
 
             if(batteryVoltage > DEPLOYMENT_VOLTAGE){

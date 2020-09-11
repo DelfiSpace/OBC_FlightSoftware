@@ -25,9 +25,9 @@
 #include "LittleFS.h"
 
 
-#define ACTIVATION_TIME             1*60
+#define ACTIVATION_TIME             10*60
 #define MAX_ADB_TEMPERATURE_WAIT    1*60
-#define DEPLOYMENT_VOLTAGE          3200
+#define DEPLOYMENT_VOLTAGE          3600
 #define LOG_INTERVAL                10
 
 #define FRAM_OBC_STATE          FRAM_DEVICE_SPECIFIC_SPACE
