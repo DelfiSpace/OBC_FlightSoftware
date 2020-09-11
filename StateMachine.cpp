@@ -10,6 +10,7 @@
 StateMachine* _stub;
 extern FRAMVar<unsigned long> totalUptime;
 extern LittleFS fs;
+extern HousekeepingService<OBCTelemetryContainer> hk;
 
 uint8_t tempBufferd[5];
 
@@ -80,9 +81,8 @@ void StateMachine::StateMachineRun()
         if((unsigned long) correctedUptime % LOG_INTERVAL == 0 && fs._mounted){
             if(logTask.taskCompleted){
                 if(logTask.taskResult){
-                    Console::log("##### EPSLogging Error?? : -%d", -logTask.taskResult);
+                    Console::log("##### Logging Error?? : -%d", -logTask.taskResult);
                 }
-
 
                 char folderbuf[64];
                 snprintf(folderbuf, sizeof(folderbuf), "LOG");
@@ -92,19 +92,34 @@ void StateMachine::StateMachineRun()
                 snprintf(folderbuf, sizeof(folderbuf), "LOG/%d/%d", (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000);
                 fs.mkdir(folderbuf);
 
-                snprintf(logTask.taskNameBuf, sizeof(logTask.taskNameBuf), "LOG/%d/%d/EPS_%d", (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000, (unsigned long)correctedUptime);
+                //collect Telemetry
+                //copy OBC telemetry:
+                memcpy(totalTelemetryContainer, hk.getTelemetry()->getArray(), OBC_CONTAINER_SIZE);
+
+                //query other telemetry:
+                uint8_t tlmIndex = OBC_CONTAINER_SIZE;
+                for(int j = 2; j <= 4; j++){
+                    getTelemetry(j, &totalTelemetryContainer[tlmIndex]);
+                    tlmIndex += telemetrySizes[j-1]; //OBC:0 EPS:1 ADB:2 COMMS:3
+                }
+
+
+                snprintf(logTask.taskNameBuf, sizeof(logTask.taskNameBuf), "LOG/%d/%d/TLM_%d", (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000, (unsigned long)correctedUptime);
                 logTask.taskOperation = FileSystemOperation::OWC;
                 logTask.taskCompleted = false;
-                logTask.taskSize = EPS_CONTAINER_SIZE;
+                logTask.taskSize = totalTelemetrySize;
                 logTask.taskFlags = LFS_O_RDWR | LFS_O_CREAT | LFS_O_APPEND;
-                logTask.taskArray = EPSContainer.getArray();
+                logTask.taskArray = totalTelemetryContainer;
 
                 int err = fs.queTask(logTask);
 //                int err = fs.file_open_write_close_async(namebuf, LFS_O_RDWR | LFS_O_CREAT | LFS_O_APPEND, EPSContainer.getArray(), 111);
                 if(err != 1){
                     Console::log("LFS QUE FULL");
                 }
-                Console::log("EPSUptime: %d", EPSContainer.getUptime());
+
+                //Debug Test
+                memcpy(EPSContainer.getArray(), &totalTelemetryContainer[OBC_CONTAINER_SIZE], 16);
+                Console::log("DEBUG:: CONTAINER UPTIME: %d", EPSContainer.getUptime());
                 Console::log("Creating File: %s with Telemetry Size: %d", logTask.taskNameBuf, logTask.taskSize);
             }
             else
@@ -125,7 +140,7 @@ void StateMachine::StateMachineRun()
             break;
         case OBCState::Deploy:
             Console::log("Get EPS Telemetry");
-            getTelemetry(Address::EPS, EPSContainer);
+            getTelemetry(Address::EPS, EPSContainer.getArray());
             Console::log("Battery INA Status: %s | Battery GG Status: %s", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryGGStatus() ? "ACTIVE" : "ERROR");
 
             short batteryVoltage;
@@ -143,7 +158,7 @@ void StateMachine::StateMachineRun()
                 PowerBusControl(true, true, false, false);
 //                todo;
 //                PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, dataPayload, Service, Message_type, timeLimitMS)
-                getTelemetry(Address::ADB, ADBContainer);
+                getTelemetry(Address::ADB, ADBContainer.getArray());
                 short adbTemperature = ADBContainer.getTemperature()/10;
                 Console::log("ADB Temperature: %s%d C", (adbTemperature<0)?"-":"", (adbTemperature<0)?-adbTemperature:adbTemperature);
                 if(adbTemperature > 0 || (unsigned long) totalUptime > ACTIVATION_TIME + MAX_ADB_TEMPERATURE_WAIT){
@@ -169,8 +184,9 @@ void StateMachine::StateMachineRun()
             }
             break;
         case OBCState::Normal:
-            getTelemetry(Address::EPS, EPSContainer);
-            Console::log("NORMAL STATE tUt:%d | Battery INA Status: %s | Voltage %d mV", (unsigned long)correctedUptime, EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
+            Console::log("Nominal mode (totalTime: %d s)", correctedUptime);
+//            getTelemetry(Address::EPS, EPSContainer);
+//            Console::log("NORMAL STATE tUt:%d | Battery INA Status: %s | Voltage %d mV", (unsigned long)correctedUptime, EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
             break;
         default:
             currentState = OBCState::Activation;
@@ -288,15 +304,19 @@ bool StateMachine::PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line
     return Succes1 && Succes2 && Succes3 && Succes4;
 }
 
-bool StateMachine::getTelemetry(unsigned char destination, TelemetryContainer &targetContainer){
-    PQ9Message* housekeepingMsg = busHandler->RequestReply(destination, 0, 0, ServiceNumber::Housekeeping, MsgType::Request, 500);
+bool StateMachine::getTelemetry(uint8_t destination, uint8_t* targetContainer){
+    PQ9Message* housekeepingMsg = busHandler->RequestReply(destination, 0, 0, ServiceNumber::Housekeeping, MsgType::Request, 50);
     if(housekeepingMsg){
         for(int i=0; i <housekeepingMsg->getPayloadSize(); i++){
-            targetContainer.getArray()[i] = housekeepingMsg->getDataPayload()[i];
+            targetContainer[i] = housekeepingMsg->getDataPayload()[i];
         }
+        Console::log("TELEMETRY %d RESPONDING", destination);
+
 //        Console::log("Tele %d %d %d %d %d", housekeepingMsg->getDataPayload()[0], housekeepingMsg->getDataPayload()[1], housekeepingMsg->getDataPayload()[2], housekeepingMsg->getDataPayload()[3], housekeepingMsg->getDataPayload()[4]);
         return true;
     }else{
+        Console::log("TELEMETRY %d NOT RESPONDING", destination);
+        memset(targetContainer,0,telemetrySizes[destination-1]);
         return false;
     }
 }

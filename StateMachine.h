@@ -16,6 +16,9 @@
 #include "InternalCommandHandler.h"
 #include "Telemetry/EPSTelemetryContainer.h"
 #include "Telemetry/ADBTelemetryContainer.h"
+#include "Telemetry/COMMSTelemetryContainer.h"
+#include "OBCTelemetryContainer.h"
+#include "HousekeepingService.h"
 #include "MB85RS.h"
 #include "FRAMBackedVar.h"
 #include "FRAMMap.h"
@@ -42,7 +45,7 @@ public:
 private:
     void processCOMMBuffer();
     bool PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line4);
-    bool getTelemetry(unsigned char destination, TelemetryContainer& targetBuffer);
+    bool getTelemetry(unsigned char destination, uint8_t* targetContainer);
 
     BusMaster<PQ9Frame, PQ9Message>* busHandler;
     InternalCommandHandler<PQ9Frame, PQ9Message>* intCmdHandler;
@@ -63,6 +66,12 @@ private:
 
     EPSTelemetryContainer EPSContainer;
     ADBTelemetryContainer ADBContainer;
+
+    uint8_t telemetrySizes[4] = {OBC_CONTAINER_SIZE, EPS_CONTAINER_SIZE, ADB_CONTAINER_SIZE, COMMS_CONTAINER_SIZE};
+    uint8_t totalTelemetrySize = OBC_CONTAINER_SIZE + EPS_CONTAINER_SIZE + ADB_CONTAINER_SIZE + COMMS_CONTAINER_SIZE;
+    uint8_t totalTelemetryContainer[OBC_CONTAINER_SIZE + EPS_CONTAINER_SIZE + ADB_CONTAINER_SIZE + COMMS_CONTAINER_SIZE];
+
+
 
 
 };
