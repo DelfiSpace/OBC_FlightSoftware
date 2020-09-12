@@ -25,9 +25,13 @@
 #include "LittleFS.h"
 
 
-#define ACTIVATION_TIME             10*60
-#define MAX_ADB_TEMPERATURE_WAIT    1*60
-#define DEPLOYMENT_VOLTAGE          3600
+#define ACTIVATION_TIME             20
+
+#define ADB_DEPLOY_MAXTEMPWAIT      1*60
+#define ADB_DEPLOY_MINTEMP          200   //mC
+#define ADB_DEPLOY_TIMEOUT          1*60
+
+#define DEPLOYMENT_VOLTAGE          3400
 #define LOG_INTERVAL                10
 
 #define FRAM_OBC_STATE          FRAM_DEVICE_SPECIFIC_SPACE
@@ -44,7 +48,7 @@ public:
 
 private:
     void processCOMMBuffer();
-    bool PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line4);
+    bool PowerBusControl(uint8_t bus, bool status);
     bool getTelemetry(unsigned char destination, uint8_t* targetContainer);
 
     BusMaster<PQ9Frame, PQ9Message>* busHandler;
@@ -54,6 +58,9 @@ private:
     PQ9Message* rcvdMsg;
     int MsgsInQue = 0;
     bool runPeriodic = false; //safety flag to make sure the periodic function runs.
+
+    int deployMode=0;
+    int lastDeployTime=0;
 
     FRAMBackedVar<uint8_t> currentState;
 

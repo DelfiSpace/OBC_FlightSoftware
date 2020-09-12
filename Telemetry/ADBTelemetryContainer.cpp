@@ -138,13 +138,13 @@ void ADBTelemetryContainer::setVoltage(short ushort)
 }
 short ADBTelemetryContainer::getTemperature()
 {
-    unsigned short ushort;
-    ((unsigned char *)&ushort)[1] = telemetry[21];
-    ((unsigned char *)&ushort)[0] = telemetry[22];
+    short ushort;
+    ((char *)&ushort)[1] = telemetry[21];
+    ((char *)&ushort)[0] = telemetry[22];
     return ushort;
 }
 void ADBTelemetryContainer::setTemperature(short ushort)
 {
-    telemetry[21] = ((unsigned char *)&ushort)[1];
-    telemetry[22] = ((unsigned char *)&ushort)[0];
+    telemetry[21] = ((char *)&ushort)[1];
+    telemetry[22] = ((char *)&ushort)[0];
 }

@@ -133,15 +133,17 @@ void StateMachine::StateMachineRun()
         {
         case OBCState::Activation:
             Console::log("Activation Uptime: %d", (unsigned long)correctedUptime);
-            if((unsigned long) totalUptime > ACTIVATION_TIME){
-                Console::log("Activation Timer Expired! -> Deploy");
+            if((unsigned long) correctedUptime > ACTIVATION_TIME){
+                Console::log("Activation Timer Expired! -> Deploy State");
+                lastDeployTime = (unsigned long) totalUptime  - ADB_DEPLOY_TIMEOUT;
+                deployMode = 0;
                 currentState = OBCState::Deploy;
             }
             break;
         case OBCState::Deploy:
-            Console::log("Get EPS Telemetry");
+            Console::log("Deploy Uptime: %d", (unsigned long)correctedUptime);
             getTelemetry(Address::EPS, EPSContainer.getArray());
-            Console::log("Battery INA Status: %s | Battery GG Status: %s", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryGGStatus() ? "ACTIVE" : "ERROR");
+//            Console::log("Battery INA Status: %s | Battery GG Status: %s", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryGGStatus() ? "ACTIVE" : "ERROR");
 
             short batteryVoltage;
             if(EPSContainer.getBatteryGGStatus()){
@@ -154,35 +156,122 @@ void StateMachine::StateMachineRun()
             }
 
             if(batteryVoltage > DEPLOYMENT_VOLTAGE){
-                Console::log("Voltage: %d mv -> DeployState: Turn on ADB", batteryVoltage);
-                PowerBusControl(true, true, false, false);
-//                todo;
-//                PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, dataPayload, Service, Message_type, timeLimitMS)
-                getTelemetry(Address::ADB, ADBContainer.getArray());
-                short adbTemperature = ADBContainer.getTemperature()/10;
-                Console::log("ADB Temperature: %s%d C", (adbTemperature<0)?"-":"", (adbTemperature<0)?-adbTemperature:adbTemperature);
-                if(adbTemperature > 0 || (unsigned long) totalUptime > ACTIVATION_TIME + MAX_ADB_TEMPERATURE_WAIT){
-                    Console::log("DeployState: DeployCommand");
-                    uint8_t deployPayload = 1;
-                    PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 200);
+                //turn on ADB
+                PowerBusControl(2, true);
 
-                    if(reply){
-                        if(reply->getDataPayload()[1] == 56){
-                            Console::log("Command Succesful: ALREADY_BURNING");
-                        }else if(reply->getDataPayload()[1] == 57){
-                            Console::log("Command Succesful: FULLY_DEPLOYED");
-                            currentState = OBCState::Normal;
-                        }else if(reply->getDataPayload()[1] == 0){
-                            Console::log("Command Succesful: STARTING_BURN");
-                        }else{
-                            Console::log("Command Succesful: %d %d %d", reply->getDataPayload()[0], reply->getDataPayload()[1], reply->getDataPayload()[2]);
-                        }
-                    }else{
-                        Console::log("Command FAILED");
+
+                //check if already deployed
+                uint8_t deployPayload = 0;
+                PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
+                if(reply){
+                    if(reply->getDataPayload()[1] == 0x0F){
+                        Console::log("+ALREADY DEPLOYED! ");
+                        currentState = OBCState::Normal;
+                        break;
                     }
+                }else{
+                    Console::log("ADB NOT RESPONDING!");
+                    break;
                 }
+
+                switch(deployMode){
+                case 0: //Wait for deploy timeout ( and (temperature or temperature wait timeout) )
+                    getTelemetry(Address::ADB,ADBContainer.getArray());
+                    if( (correctedUptime - lastDeployTime > ADB_DEPLOY_TIMEOUT && ADBContainer.getTemperature() > ADB_DEPLOY_MINTEMP) || correctedUptime - lastDeployTime > ADB_DEPLOY_TIMEOUT + ADB_DEPLOY_MAXTEMPWAIT){
+                        deployMode = 1;
+                    }else{
+                        Console::log("WAIT FOR DEPLOY: %d s |  T:%s%d C", correctedUptime - lastDeployTime,ADBContainer.getTemperature()<0?"-":"", ADBContainer.getTemperature()<0?-ADBContainer.getTemperature():ADBContainer.getTemperature() );
+                    }
+                    break;
+                case 1: //Deploy
+                    Console::log("DEPLOY!");
+                    deployPayload = 2;
+                    reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
+                    if(reply){
+                        if(reply->getDataPayload()[1] == 57){
+                            Console::log("-ALREADY DEPLOYED! ");
+                            currentState = OBCState::Normal;
+                        }
+                        deployMode = 2;
+                    }
+                    break;
+                case 2: //Wait for finish
+                    deployPayload = 1;
+                    reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
+                    if(reply){
+                        if(reply->getDataPayload()[2] == 1){
+                            Console::log("BURNING!");
+                        }else{
+                            Console::log("DONE!");
+                            deployMode = 3;
+                        }
+                    }
+                    break;
+                case 3: //Check if deployed
+                    deployPayload = 0;
+                    reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
+                    if(reply){
+                        if(reply->getDataPayload()[1] == 0x0F){
+                            Console::log("DEPLOYED! ");
+                            currentState = OBCState::Normal;
+                            break;
+                        }else{
+                            lastDeployTime = correctedUptime;
+                            Console::log("DEPLOY FAILED : RETRYING : (new lastDeployTime: %d)", lastDeployTime);
+                            deployMode = 0;
+                        }
+                    }
+                    break;
+                default:
+                    deployMode = 0;
+                    break;
+                }
+
+
             }
             break;
+//                Console::log("ADB ON!");
+
+//                //check if already deployed:
+//                uint8_t deployPayload = 0;
+//                PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
+//                if(reply->getDataPayload()[1] == 0x0F){
+//                    Console::log(" ALREADY DEPLOYED! ");
+//                    currentState = OBCState::Normal;
+//                    break;
+//                }
+//
+//                //get ADB temperature
+//                getTelemetry(Address::ADB, ADBContainer.getArray());
+//                signed short adbTemperature = ADBContainer.getTemperature();
+//                Console::log("ADB Temperature: %s%d C", (adbTemperature<0)?"-":"", (adbTemperature<0)?-adbTemperature:adbTemperature);
+//
+//                //check if DeployTimeout has expired
+//                if(adbTemperature > 0 || (unsigned long) totalUptime - lastBurnTime > ADB_DEPLOY_TIMEOUT + ADB_TEMPERATURE_WAIT){
+//
+//                    //Check if deploying!
+//                    deployPayload = 1;
+//                    PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
+//                    if(reply){
+//                        if(reply->getDataPayload()[2] == 1){
+//                            Console::log("Command Succesful: ALREADY_BURNING");
+//                        }else if(reply->getDataPayload()[2] == 0){
+//
+//                            //Deploy!
+//                            lastBurnTime = (unsigned long) totalUptime;
+//                            deployPayload = 2;
+//                            PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
+//                            if(reply->getDataPayload()[1] == 57){
+//                                Console::log("Command Succesful: Already Deployed");
+//                                currentState = OBCState::Normal;
+//                            }
+//
+//                        }
+//                    }else{
+//                        Console::log("DEPLOY Command FAILED");
+//                        //reboot?
+//                    }
+
         case OBCState::Normal:
             Console::log("Nominal mode (totalTime: %d s)", correctedUptime);
 //            getTelemetry(Address::EPS, EPSContainer);
@@ -278,34 +367,21 @@ void StateMachine::processCOMMBuffer(){
     MsgsInQue--;
 }
 
-bool StateMachine::PowerBusControl(bool Line1, bool Line2, bool Line3, bool Line4)
+bool StateMachine::PowerBusControl(uint8_t bus, bool status)
 {
-    // Define relevant hex values corresponding to EPS command over bus.
-    char V1 = 0x01;
-    char V2 = 0x02;
-    char V3 = 0x03;
-    char V4 = 0x04;
 
 ////    Send to EPS
     uint8_t msgPayload[2];
-    msgPayload[0] = V1;
-    msgPayload[1] = Line1 ? 0x01:0x00;
-    PQ9Message* Succes1 = busHandler->RequestReply(Address::EPS, 2, msgPayload, ServiceNumber::PowerBus, MsgType::Request, 500);
-    msgPayload[0] = V2;
-    msgPayload[1] = Line2 ? 0x01:0x00;
-    PQ9Message* Succes2 = busHandler->RequestReply(Address::EPS, 2, msgPayload, ServiceNumber::PowerBus, MsgType::Request, 500);
-    msgPayload[0] = V3;
-    msgPayload[1] = Line3 ? 0x01:0x00;
-    PQ9Message* Succes3 = busHandler->RequestReply(Address::EPS, 2, msgPayload, ServiceNumber::PowerBus, MsgType::Request, 500);
-    msgPayload[0] = V4;
-    msgPayload[1] = Line4 ? 0x01:0x00;
-    PQ9Message* Succes4 = busHandler->RequestReply(Address::EPS, 2, msgPayload, ServiceNumber::PowerBus, MsgType::Request, 500);
+    msgPayload[0] = bus;
+    msgPayload[1] = status ? 0x01:0x00;
+    PQ9Message* Succes = busHandler->RequestReply(Address::EPS, 2, msgPayload, ServiceNumber::PowerBus, MsgType::Request, 50);
 
-    return Succes1 && Succes2 && Succes3 && Succes4;
+    __delay_cycles(48000000/(1000L/50)); // @suppress("Function cannot be resolved")
+    return Succes;
 }
 
 bool StateMachine::getTelemetry(uint8_t destination, uint8_t* targetContainer){
-    PQ9Message* housekeepingMsg = busHandler->RequestReply(destination, 0, 0, ServiceNumber::Housekeeping, MsgType::Request, 50);
+    PQ9Message* housekeepingMsg = busHandler->RequestReply(destination, 0, 0, ServiceNumber::Housekeeping, MsgType::Request, 100);
     if(housekeepingMsg){
         for(int i=0; i <housekeepingMsg->getPayloadSize(); i++){
             targetContainer[i] = housekeepingMsg->getDataPayload()[i];
