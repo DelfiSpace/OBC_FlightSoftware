@@ -25,16 +25,17 @@
 #include "LittleFS.h"
 
 
-#define ACTIVATION_TIME             20
+#define ACTIVATION_TIME             2*60//15*60
 
-#define ADB_DEPLOY_MAXTEMPWAIT      1*60
+#define ADB_DEPLOY_MAXTEMPWAIT      1*60//45*60
 #define ADB_DEPLOY_MINTEMP          200   //mC
-#define ADB_DEPLOY_TIMEOUT          1*60
+#define ADB_DEPLOY_TIMEOUT          1*60//10*60
 
 #define DEPLOYMENT_VOLTAGE          3400
 #define LOG_INTERVAL                10
 
-#define FRAM_OBC_STATE          FRAM_DEVICE_SPECIFIC_SPACE
+#define FRAM_OBC_STATE              FRAM_DEVICE_SPECIFIC_SPACE
+#define FRAM_CURRENT_DEPLOY_TIME    FRAM_OBC_STATE + 1
 
 enum OBCState {Activation = 0x00, Deploy = 0x01, Normal = 0x02 };
 
@@ -45,6 +46,10 @@ public:
     void StateMachineRun();
     virtual bool notified();
     void init();
+    FRAMBackedVar<uint8_t> currentState;
+
+    void addOneSecWait();
+    void overrideTotalUptime(unsigned long newUptime);
 
 private:
     void processCOMMBuffer();
@@ -58,11 +63,12 @@ private:
     PQ9Message* rcvdMsg;
     int MsgsInQue = 0;
     bool runPeriodic = false; //safety flag to make sure the periodic function runs.
+    int waitTime = 0;
 
     int deployMode=0;
-    int lastDeployTime=0;
+    int stoppedDeployTime=0;
 
-    FRAMBackedVar<uint8_t> currentState;
+    FRAMBackedVar<unsigned long> currentDeployTime;
 
     LFSTask logTask;
     lfs_file_t logFile;

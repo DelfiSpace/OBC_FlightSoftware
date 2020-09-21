@@ -29,6 +29,7 @@ StateMachine::StateMachine(MB85RS &fram_in, BusMaster<PQ9Frame, PQ9Message> &bus
 
 void StateMachine::init(){
     this->currentState.init(*fram, FRAM_OBC_STATE, true, true);
+    this->currentDeployTime.init(*fram, FRAM_CURRENT_DEPLOY_TIME, true, true);
 }
 
 bool StateMachine::notified(){
@@ -42,7 +43,7 @@ void StateMachine::StateMachineRun()
         Console::log("Periodic Detect!"); //this flag gets raised if you should make time for the Periodic Function
     }
 
-    if(this->MsgsInQue && !runPeriodic){
+    if(this->MsgsInQue && !runPeriodic && !waitTime){
         processCOMMBuffer();
 
     }else{
@@ -60,9 +61,12 @@ void StateMachine::StateMachineRun()
             }
         }
 
+        //UPDATE WAIT TIME
+        if(waitTime>0){
+            waitTime--;
+        }
 
         //LOGGING OPERATION
-
         //correction on uptime race-condition
         if((unsigned long) totalUptime == correctedUptime){
             //same time twice, increase with 1
@@ -132,16 +136,15 @@ void StateMachine::StateMachineRun()
         switch((uint8_t)currentState)
         {
         case OBCState::Activation:
-            Console::log("Activation Uptime: %d", (unsigned long)correctedUptime);
-            if((unsigned long) correctedUptime > ACTIVATION_TIME){
-                Console::log("Activation Timer Expired! -> Deploy State");
-                lastDeployTime = (unsigned long) totalUptime  - ADB_DEPLOY_TIMEOUT;
+            Console::log("ACTIVATION: Uptime: %d s (ACTIVATION_TIME: %d s)", (unsigned long)correctedUptime, ACTIVATION_TIME);
+            if((unsigned long) correctedUptime >= ACTIVATION_TIME){
+//                Console::log("Activation Timer Expired! -> Deploy State");
                 deployMode = 0;
                 currentState = OBCState::Deploy;
             }
             break;
         case OBCState::Deploy:
-            Console::log("Deploy Uptime: %d", (unsigned long)correctedUptime);
+//            Console::log("Deploy Uptime: %d", (unsigned long)correctedUptime);
             getTelemetry(Address::EPS, EPSContainer.getArray());
 //            Console::log("Battery INA Status: %s | Battery GG Status: %s", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryGGStatus() ? "ACTIVE" : "ERROR");
 
@@ -156,40 +159,43 @@ void StateMachine::StateMachineRun()
             }
 
             if(batteryVoltage > DEPLOYMENT_VOLTAGE){
+
+                //current persistent DeployTime
+                currentDeployTime += 1;
+
                 //turn on ADB
                 PowerBusControl(2, true);
-
 
                 //check if already deployed
                 uint8_t deployPayload = 0;
                 PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
                 if(reply){
                     if(reply->getDataPayload()[1] == 0x0F){
-                        Console::log("+ALREADY DEPLOYED! ");
+                        Console::log("DEPLOY: +Deployed! ");
                         currentState = OBCState::Normal;
                         break;
                     }
                 }else{
-                    Console::log("ADB NOT RESPONDING!");
+                    Console::log("DEPLOY: ADB NOT RESPONDING!");
                     break;
                 }
 
                 switch(deployMode){
-                case 0: //Wait for deploy timeout ( and (temperature or temperature wait timeout) )
+                case 0: //Temperature or temperature wait timeout
                     getTelemetry(Address::ADB,ADBContainer.getArray());
-                    if( (correctedUptime - lastDeployTime > ADB_DEPLOY_TIMEOUT && ADBContainer.getTemperature() > ADB_DEPLOY_MINTEMP) || correctedUptime - lastDeployTime > ADB_DEPLOY_TIMEOUT + ADB_DEPLOY_MAXTEMPWAIT){
+                    if( (ADBContainer.getTemperature() > ADB_DEPLOY_MINTEMP) || currentDeployTime > ADB_DEPLOY_MAXTEMPWAIT){
                         deployMode = 1;
                     }else{
-                        Console::log("WAIT FOR DEPLOY: %d s |  T:%s%d C", correctedUptime - lastDeployTime,ADBContainer.getTemperature()<0?"-":"", ADBContainer.getTemperature()<0?-ADBContainer.getTemperature():ADBContainer.getTemperature() );
+                        Console::log("DEPLOY: Wait for suitable temperature: %d s (MAX: %d s) |  T:%s %d C (MIN: %d C)", currentDeployTime, ADB_DEPLOY_MAXTEMPWAIT, ADBContainer.getTemperature()<0?"-":"", ADBContainer.getTemperature()<0?-ADBContainer.getTemperature():ADBContainer.getTemperature() ,ADB_DEPLOY_MINTEMP );
                     }
                     break;
                 case 1: //Deploy
-                    Console::log("DEPLOY!");
+                    Console::log("DEPLOY: Initiating Deployment!");
                     deployPayload = 2;
                     reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
                     if(reply){
                         if(reply->getDataPayload()[1] == 57){
-                            Console::log("-ALREADY DEPLOYED! ");
+                            Console::log("Deploy: -Already Deployed! ");
                             currentState = OBCState::Normal;
                         }
                         deployMode = 2;
@@ -200,9 +206,9 @@ void StateMachine::StateMachineRun()
                     reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
                     if(reply){
                         if(reply->getDataPayload()[2] == 1){
-                            Console::log("BURNING!");
+                            Console::log("DEPLOY: Burning!");
                         }else{
-                            Console::log("DONE!");
+                            Console::log("DEPLOY: Done Burning!");
                             deployMode = 3;
                         }
                     }
@@ -212,68 +218,33 @@ void StateMachine::StateMachineRun()
                     reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
                     if(reply){
                         if(reply->getDataPayload()[1] == 0x0F){
-                            Console::log("DEPLOYED! ");
+                            Console::log("DEPLOY: Successful deployment! ");
                             currentState = OBCState::Normal;
                             break;
                         }else{
-                            lastDeployTime = correctedUptime;
-                            Console::log("DEPLOY FAILED : RETRYING : (new lastDeployTime: %d)", lastDeployTime);
-                            deployMode = 0;
+                            stoppedDeployTime = currentDeployTime;
+                            Console::log("DEPLOY: Failed deployment, retrying : (new stoppedDeployTime: %d)", stoppedDeployTime);
+                            deployMode = 4;
                         }
+                    }
+                    break;
+                case 4: //Wait for TIMEOUT expire
+                    if(currentDeployTime - stoppedDeployTime > ADB_DEPLOY_TIMEOUT){
+                        currentDeployTime = 0;
+                        deployMode = 0;
+                    }else{
+                        Console::log("DEPLOY: Wait for Retry %d s (TIMEOUT: %d s)", currentDeployTime - stoppedDeployTime, ADB_DEPLOY_TIMEOUT);
                     }
                     break;
                 default:
                     deployMode = 0;
                     break;
                 }
-
-
             }
             break;
-//                Console::log("ADB ON!");
-
-//                //check if already deployed:
-//                uint8_t deployPayload = 0;
-//                PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
-//                if(reply->getDataPayload()[1] == 0x0F){
-//                    Console::log(" ALREADY DEPLOYED! ");
-//                    currentState = OBCState::Normal;
-//                    break;
-//                }
-//
-//                //get ADB temperature
-//                getTelemetry(Address::ADB, ADBContainer.getArray());
-//                signed short adbTemperature = ADBContainer.getTemperature();
-//                Console::log("ADB Temperature: %s%d C", (adbTemperature<0)?"-":"", (adbTemperature<0)?-adbTemperature:adbTemperature);
-//
-//                //check if DeployTimeout has expired
-//                if(adbTemperature > 0 || (unsigned long) totalUptime - lastBurnTime > ADB_DEPLOY_TIMEOUT + ADB_TEMPERATURE_WAIT){
-//
-//                    //Check if deploying!
-//                    deployPayload = 1;
-//                    PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
-//                    if(reply){
-//                        if(reply->getDataPayload()[2] == 1){
-//                            Console::log("Command Succesful: ALREADY_BURNING");
-//                        }else if(reply->getDataPayload()[2] == 0){
-//
-//                            //Deploy!
-//                            lastBurnTime = (unsigned long) totalUptime;
-//                            deployPayload = 2;
-//                            PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
-//                            if(reply->getDataPayload()[1] == 57){
-//                                Console::log("Command Succesful: Already Deployed");
-//                                currentState = OBCState::Normal;
-//                            }
-//
-//                        }
-//                    }else{
-//                        Console::log("DEPLOY Command FAILED");
-//                        //reboot?
-//                    }
 
         case OBCState::Normal:
-            Console::log("Nominal mode (totalTime: %d s)", correctedUptime);
+            Console::log("OPERATIONAL: current totalTime: %d s)", correctedUptime);
 //            getTelemetry(Address::EPS, EPSContainer);
 //            Console::log("NORMAL STATE tUt:%d | Battery INA Status: %s | Voltage %d mV", (unsigned long)correctedUptime, EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
             break;
@@ -395,4 +366,16 @@ bool StateMachine::getTelemetry(uint8_t destination, uint8_t* targetContainer){
         memset(targetContainer,0,telemetrySizes[destination-1]);
         return false;
     }
+}
+
+void StateMachine::addOneSecWait(){
+    if(waitTime == 0){
+        waitTime += 2;
+    }else{
+        waitTime += 1;
+    }
+}
+
+void StateMachine::overrideTotalUptime(unsigned long newUptime){
+    totalUptime = newUptime;
 }
