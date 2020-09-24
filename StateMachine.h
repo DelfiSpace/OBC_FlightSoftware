@@ -34,8 +34,11 @@
 #define DEPLOYMENT_VOLTAGE          3400
 #define LOG_INTERVAL                10
 
+#define BEACON_INTERVAL             10
+
 #define FRAM_OBC_STATE              FRAM_DEVICE_SPECIFIC_SPACE
 #define FRAM_CURRENT_DEPLOY_TIME    FRAM_OBC_STATE + 1
+#define FRAM_BEACON_ENABLED         FRAM_CURRENT_DEPLOY_TIME + 4
 
 enum OBCState {Activation = 0x00, Deploy = 0x01, Normal = 0x02 };
 
@@ -46,10 +49,14 @@ public:
     void StateMachineRun();
     virtual bool notified();
     void init();
+
     FRAMBackedVar<uint8_t> currentState;
 
     void addOneSecWait();
     void overrideTotalUptime(unsigned long newUptime);
+
+    FRAMBackedVar<uint8_t> beaconEnabled;
+
 
 private:
     void processCOMMBuffer();

@@ -1,8 +1,9 @@
 #include "StateMachineService.h"
 
-StateMachineService::StateMachineService(StateMachine &stateMachine_in)
+extern StateMachine stateMachine;
+
+StateMachineService::StateMachineService()//StateMachine &stateMachine_in)
 {
-    stateMachine = &stateMachine_in;
 };
 
 bool StateMachineService::process(DataMessage &command, DataMessage &workingBuffer)
@@ -16,29 +17,49 @@ bool StateMachineService::process(DataMessage &command, DataMessage &workingBuff
         switch(command.getDataPayload()[0])
         {
         case STATEMACHINE_GET_STATE:
-            Console::log("StateMachineService: GET_STATE");
-            workingBuffer.getDataPayload()[0] = (uint8_t) stateMachine->currentState;
-            workingBuffer.setPayloadSize(1);
+            if(command.getPayloadSize() == 1){
+                Console::log("StateMachineService: GET_STATE");
+                workingBuffer.getDataPayload()[0] = (uint8_t) stateMachine.currentState;
+                workingBuffer.setPayloadSize(1);
+            }else{
+                goto UNKNOWNCOMMAND;
+            }
             break;
         case STATEMACHINE_OVERRIDE_STATE:
-            Console::log("StateMachineService: OVERRIDE_STATE");
-            stateMachine->currentState = workingBuffer.getDataPayload()[1];
-            workingBuffer.getDataPayload()[0] = 0;
-            workingBuffer.setPayloadSize(1);
+            if(command.getPayloadSize() == 2){
+                Console::log("StateMachineService: OVERRIDE_STATE : %d",  command.getDataPayload()[1]);
+                stateMachine.currentState.write(command.getDataPayload()[1]);
+                workingBuffer.getDataPayload()[0] = 0;
+                workingBuffer.setPayloadSize(1);
+            }else{
+                goto UNKNOWNCOMMAND;
+            }
             break;
         case STATEMACHINE_1SEC_BUBBLE:
             Console::log("StateMachineService: 1SEC_BUBBLE");
-            stateMachine->addOneSecWait();
+            stateMachine.addOneSecWait();
             break;
         case STATEMACHINE_UPTIME_OVERRIDE:
-            unsigned long ulong;
-            ((unsigned char *)&ulong)[3] = command.getDataPayload()[1];
-            ((unsigned char *)&ulong)[2] = command.getDataPayload()[2];
-            ((unsigned char *)&ulong)[1] = command.getDataPayload()[3];
-            ((unsigned char *)&ulong)[0] = command.getDataPayload()[4];
-            Console::log("StateMachineService: OVERRIDE UPTIME : %d", ulong);
-            stateMachine->overrideTotalUptime(ulong);
+            if(command.getPayloadSize() == 5){
+                unsigned long ulong;
+                ((unsigned char *)&ulong)[3] = command.getDataPayload()[1];
+                ((unsigned char *)&ulong)[2] = command.getDataPayload()[2];
+                ((unsigned char *)&ulong)[1] = command.getDataPayload()[3];
+                ((unsigned char *)&ulong)[0] = command.getDataPayload()[4];
+                Console::log("StateMachineService: OVERRIDE UPTIME : %d", ulong);
+                stateMachine.overrideTotalUptime(ulong);
+            }else{
+                goto UNKNOWNCOMMAND;
+            }
             break;
+        case STATEMACHINE_SET_BEACON:
+            if(command.getPayloadSize() == 2){
+                stateMachine.beaconEnabled = (command.getDataPayload()[1] != 0) ? 1 : 0;
+            }else{
+                goto UNKNOWNCOMMAND;
+            }
+            break;
+UNKNOWNCOMMAND:
         default:
             Console::log("StateMachineService: Unknown command!");
             workingBuffer.setPayloadSize(1);

@@ -38,6 +38,9 @@ bool StateMachine::notified(){
 
 void StateMachine::StateMachineRun()
 {
+    if(execute){
+        runPeriodic = true;  //execute flag is raised, periodic function should be run.
+    }
     execute = false; //lower immidiately, to detect 're-raise'
     if(runPeriodic){
         Console::log("Periodic Detect!"); //this flag gets raised if you should make time for the Periodic Function
@@ -46,7 +49,7 @@ void StateMachine::StateMachineRun()
     if(this->MsgsInQue && !runPeriodic && !waitTime){
         processCOMMBuffer();
 
-    }else{
+    }else if(runPeriodic){
         //get Messages from COMMS:
         unsigned char payload = 3; //command to ask the nr of messages
         rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, ServiceNumber::Radio, MsgType::Request, 200);
@@ -63,6 +66,7 @@ void StateMachine::StateMachineRun()
 
         //UPDATE WAIT TIME
         if(waitTime>0){
+            Console::log("REDUCING WAIT TIME: %d", waitTime);
             waitTime--;
         }
 
@@ -247,8 +251,12 @@ void StateMachine::StateMachineRun()
             Console::log("OPERATIONAL: current totalTime: %d s)", correctedUptime);
 //            getTelemetry(Address::EPS, EPSContainer);
 //            Console::log("NORMAL STATE tUt:%d | Battery INA Status: %s | Voltage %d mV", (unsigned long)correctedUptime, EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
+            if(correctedUptime % BEACON_INTERVAL == 0 && beaconEnabled == 1){
+                Console::log("OPERATIONAL: BEACON TRANSMIT!", correctedUptime);
+            }
             break;
         default:
+            Console::log("UNKNOWN STATE! %d", currentState);
             currentState = OBCState::Activation;
         }
 
@@ -265,7 +273,6 @@ void StateMachine::StateMachineRun()
         runPeriodic = true; //if execute got raised during execution, make sure to carry it over.
     }
 }
-
 
 
 //Function that takes care of commands in COMMS Buffer
@@ -369,11 +376,7 @@ bool StateMachine::getTelemetry(uint8_t destination, uint8_t* targetContainer){
 }
 
 void StateMachine::addOneSecWait(){
-    if(waitTime == 0){
-        waitTime += 2;
-    }else{
-        waitTime += 1;
-    }
+    waitTime += 1;
 }
 
 void StateMachine::overrideTotalUptime(unsigned long newUptime){

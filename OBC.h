@@ -35,6 +35,7 @@
 #include "HWMonitor.h"
 #include "ADCManager.h"
 #include "StateMachine.h"
+#include "StateMachineService.h"
 #include "OBCTelemetryContainer.h"
 #include "BusMaster.h"
 #include "FRAMService.h"

@@ -31,6 +31,8 @@ TelemetryRequestService tlmReqServ(fs, sdcard);
 FRAMService framServ(fram);
 PingService ping;
 ResetService reset( GPIO_PORT_P4, GPIO_PIN0, GPIO_PORT_P4, GPIO_PIN2 );
+StateMachineService stateMachineService;
+
 HousekeepingService<OBCTelemetryContainer> hk;
 #ifndef SW_VERSION
 SoftwareUpdateService SWupdate(fram);
@@ -38,12 +40,12 @@ SoftwareUpdateService SWupdate(fram);
 SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
 #endif
 
-Service* services[] = { &ping, &reset, &hk, &SWupdate, &framServ, &tlmReqServ };
+Service* services[] = { &ping, &reset, &hk, &SWupdate, &framServ, &tlmReqServ, &stateMachineService };
 
 
 // OBC board tasks
-CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 6);
-InternalCommandHandler<PQ9Frame,PQ9Message> internalCmdHandler(services, 6);
+CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 7);
+InternalCommandHandler<PQ9Frame,PQ9Message> internalCmdHandler(services, 7);
 PeriodicTask timerTask(1000, periodicTask);
 StateMachine stateMachine(fram, busHandler, internalCmdHandler);
 PeriodicTask* periodicTasks[] = {&timerTask, &stateMachine};
