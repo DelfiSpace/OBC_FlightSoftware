@@ -30,6 +30,7 @@ StateMachine::StateMachine(MB85RS &fram_in, BusMaster<PQ9Frame, PQ9Message> &bus
 void StateMachine::init(){
     this->currentState.init(*fram, FRAM_OBC_STATE, true, true);
     this->currentDeployTime.init(*fram, FRAM_CURRENT_DEPLOY_TIME, true, true);
+    this->beaconEnabled.init(*fram, FRAM_BEACON_ENABLED, true, true);
 }
 
 bool StateMachine::notified(){
@@ -42,9 +43,9 @@ void StateMachine::StateMachineRun()
         runPeriodic = true;  //execute flag is raised, periodic function should be run.
     }
     execute = false; //lower immidiately, to detect 're-raise'
-    if(runPeriodic){
-        Console::log("Periodic Detect!"); //this flag gets raised if you should make time for the Periodic Function
-    }
+//    if(runPeriodic){
+//        Console::log("Periodic Detect!"); //this flag gets raised if you should make time for the Periodic Function
+//    }
 
     if(this->MsgsInQue && !runPeriodic && !waitTime){
         processCOMMBuffer();
@@ -83,11 +84,19 @@ void StateMachine::StateMachineRun()
         }
 
 
-        if(!fs._mounted){
-            Console::log("FS NOT MOUNTED!");
-        }
-        if((unsigned long) correctedUptime % LOG_INTERVAL == 0 && fs._mounted){
-            if(logTask.taskCompleted){
+        if((unsigned long) correctedUptime % LOG_INTERVAL == 0){
+            //collect Telemetry
+            //copy OBC telemetry:
+            memcpy(totalTelemetryContainer, hk.getTelemetry()->getArray(), OBC_CONTAINER_SIZE);
+
+            //query other telemetry:
+            uint8_t tlmIndex = OBC_CONTAINER_SIZE;
+            for(int j = 2; j <= 4; j++){
+                getTelemetry(j, &totalTelemetryContainer[tlmIndex]);
+                tlmIndex += telemetrySizes[j-1]; //OBC:0 EPS:1 ADB:2 COMMS:3
+            }
+
+            if(logTask.taskCompleted  && fs._mounted){
                 if(logTask.taskResult){
                     Console::log("##### Logging Error?? : -%d", -logTask.taskResult);
                 }
@@ -99,17 +108,6 @@ void StateMachine::StateMachineRun()
                 fs.mkdir(folderbuf);
                 snprintf(folderbuf, sizeof(folderbuf), "LOG/%d/%d", (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000);
                 fs.mkdir(folderbuf);
-
-                //collect Telemetry
-                //copy OBC telemetry:
-                memcpy(totalTelemetryContainer, hk.getTelemetry()->getArray(), OBC_CONTAINER_SIZE);
-
-                //query other telemetry:
-                uint8_t tlmIndex = OBC_CONTAINER_SIZE;
-                for(int j = 2; j <= 4; j++){
-                    getTelemetry(j, &totalTelemetryContainer[tlmIndex]);
-                    tlmIndex += telemetrySizes[j-1]; //OBC:0 EPS:1 ADB:2 COMMS:3
-                }
 
 
                 snprintf(logTask.taskNameBuf, sizeof(logTask.taskNameBuf), "LOG/%d/%d/TLM_%d", (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000, (unsigned long)correctedUptime);
@@ -126,13 +124,17 @@ void StateMachine::StateMachineRun()
                 }
 
                 //Debug Test
-                memcpy(EPSContainer.getArray(), &totalTelemetryContainer[OBC_CONTAINER_SIZE], 16);
-                Console::log("DEBUG:: CONTAINER UPTIME: %d", EPSContainer.getUptime());
+//                memcpy(EPSContainer.getArray(), &totalTelemetryContainer[OBC_CONTAINER_SIZE], 16);
+//                Console::log("DEBUG:: CONTAINER UPTIME: %d", EPSContainer.getUptime());
                 Console::log("Creating File: %s with Telemetry Size: %d", logTask.taskNameBuf, logTask.taskSize);
             }
             else
             {
-                Console::log("LittleFS too busy! (err:-%d | op:%d)", -fs._err, fs.curOperation);
+                if(fs.curOperation == 1){
+                    Console::log("LittleFS Still Mounting..");
+                }else{
+                    Console::log("LittleFS too busy! (err:-%d | op:%d)", -fs._err, fs.curOperation);
+                }
             }
         }
 
@@ -248,11 +250,59 @@ void StateMachine::StateMachineRun()
             break;
 
         case OBCState::Normal:
-            Console::log("OPERATIONAL: current totalTime: %d s)", correctedUptime);
-//            getTelemetry(Address::EPS, EPSContainer);
-//            Console::log("NORMAL STATE tUt:%d | Battery INA Status: %s | Voltage %d mV", (unsigned long)correctedUptime, EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryINAVoltage());
-            if(correctedUptime % BEACON_INTERVAL == 0 && beaconEnabled == 1){
-                Console::log("OPERATIONAL: BEACON TRANSMIT!", correctedUptime);
+            switch(this->operationalState){
+            case 0: //SAFEMODE
+                bool EPSAlive = getTelemetry(Address::EPS, EPSContainer.getArray());
+                short batteryVoltage;
+                if(EPSAlive){
+                    if(EPSContainer.getBatteryGGStatus()){
+                        batteryVoltage = EPSContainer.getBatteryGGVoltage();
+                    }else if(EPSContainer.getBatteryINAStatus()){
+                        batteryVoltage = EPSContainer.getBatteryINAVoltage();
+                    }else{
+                        //both sensors are dead...
+                        batteryVoltage = SAFE_VOLTAGE + 1;
+                    }
+                    Console::log("OPERATIONAL: - SAFE - current totalTime: %d s | Battery Voltage %d mV", correctedUptime, batteryVoltage);
+                }else{
+                    //EPS is dead...
+                    batteryVoltage = SAFE_VOLTAGE + 1;
+                    Console::log("OPERATIONAL: - SAFE - current totalTime: %d s | - EPS DEAD -", correctedUptime, batteryVoltage);
+
+                }
+                if(batteryVoltage > SAFE_VOLTAGE){
+                    operationalState = 1;
+                }
+                break;
+            case 1:
+                Console::log("OPERATIONAL: - NOMINAL - current totalTime: %d s", correctedUptime);
+                if(correctedUptime % BEACON_INTERVAL == 0 && beaconEnabled == 1){
+                   Console::log("OPERATIONAL: BEACON TRANSMIT!", correctedUptime);
+                   //get Pointer to target system
+
+                   int telemetryIndex = 0;
+                   uint8_t beaconCmdPayload[200];
+                   beaconCmdPayload[0] = 9; //SEND PACKET COMMS
+                   beaconCmdPayload[1] = 0; //id Number
+                   beaconCmdPayload[2] = 8; //Destination Ground
+                   beaconCmdPayload[3] = 0; //size (different per payload)
+                   beaconCmdPayload[4] = Address::OBC; //source (OBC)
+                   beaconCmdPayload[5] = ServiceNumber::TelemetryRequest;
+                   beaconCmdPayload[6] = MsgType::Reply;
+                   beaconCmdPayload[7] = 0; //OK No error
+
+                   for(int j = 1; j < 5; j++){
+                       beaconCmdPayload[8] = j;
+                       beaconCmdPayload[3] = telemetrySizes[j-1] + 3;
+                       memcpy(&beaconCmdPayload[9], &totalTelemetryContainer[telemetryIndex], telemetrySizes[j-1]);
+                       busHandler->RequestReply(Address::COMMS, beaconCmdPayload[3] + 4, beaconCmdPayload, ServiceNumber::Radio, MsgType::Request, 50);
+                       telemetryIndex += telemetrySizes[j-1];
+                   }
+                }
+                break;
+            default:
+                operationalState = 0;
+                break;
             }
             break;
         default:

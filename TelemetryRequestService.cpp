@@ -72,13 +72,14 @@ bool TelemetryRequestService::process(DataMessage &command, DataMessage &working
                         Console::log("REQ CONTAINER INDEX: %d", telemetryIndex);
 
                         //copy telemetry into the reply:
-                        workingBuffer.setPayloadSize(1 + telemetrySizes[targetSystem-1]);
+                        workingBuffer.setPayloadSize(2 + telemetrySizes[targetSystem-1]);
                         workingBuffer.getDataPayload()[0] = TELEMETRY_NO_ERROR;
-                        memcpy(&workingBuffer.getDataPayload()[1], &totalTelemetryContainer[telemetryIndex], telemetrySizes[targetSystem-1]);
+                        workingBuffer.getDataPayload()[1] = targetSystem;
+                        memcpy(&workingBuffer.getDataPayload()[2], &totalTelemetryContainer[telemetryIndex], telemetrySizes[targetSystem-1]);
 
                         //Debug Test Print target total uptime (put in EPS as houskeepingheader is same size anyways
-                        memcpy(EPSbuffer.getArray(), &totalTelemetryContainer[telemetryIndex], 16);
-                        Console::log("DEBUG REQ:: TARGET (%d) CONTAINER UPTIME: %d", targetSystem, EPSbuffer.getUptime());
+//                        memcpy(EPSbuffer.getArray(), &totalTelemetryContainer[telemetryIndex], 16);
+//                        Console::log("DEBUG REQ:: TARGET (%d) CONTAINER UPTIME: %d", targetSystem, EPSbuffer.getUptime());
 
                     }else{
                         workingBuffer.setPayloadSize(1);

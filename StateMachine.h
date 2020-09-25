@@ -31,10 +31,11 @@
 #define ADB_DEPLOY_MINTEMP          200   //mC
 #define ADB_DEPLOY_TIMEOUT          1*60//10*60
 
-#define DEPLOYMENT_VOLTAGE          3400
+#define DEPLOYMENT_VOLTAGE          3600
+#define SAFE_VOLTAGE                3400
 #define LOG_INTERVAL                10
 
-#define BEACON_INTERVAL             10
+#define BEACON_INTERVAL             60
 
 #define FRAM_OBC_STATE              FRAM_DEVICE_SPECIFIC_SPACE
 #define FRAM_CURRENT_DEPLOY_TIME    FRAM_OBC_STATE + 1
@@ -51,6 +52,7 @@ public:
     void init();
 
     FRAMBackedVar<uint8_t> currentState;
+    uint8_t operationalState = 0;
 
     void addOneSecWait();
     void overrideTotalUptime(unsigned long newUptime);

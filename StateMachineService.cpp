@@ -54,6 +54,7 @@ bool StateMachineService::process(DataMessage &command, DataMessage &workingBuff
             break;
         case STATEMACHINE_SET_BEACON:
             if(command.getPayloadSize() == 2){
+                Console::log("StateMachineService: BEACON %s", (command.getDataPayload()[1] != 0) ? "ON" : "OFF");
                 stateMachine.beaconEnabled = (command.getDataPayload()[1] != 0) ? 1 : 0;
             }else{
                 goto UNKNOWNCOMMAND;
