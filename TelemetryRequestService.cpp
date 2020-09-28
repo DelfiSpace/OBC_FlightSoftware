@@ -132,7 +132,7 @@ void TelemetryRequestService::getTelemetry(unsigned long targetUptime){
     requestTask.taskSize = 0; //unnecessary for open
     requestTask.taskFlags = LFS_O_RDONLY;
     requestTask.taskArray = 0; //unnecessary for open
-    snprintf(requestTask.taskNameBuf, sizeof(requestTask.taskNameBuf), "LOG/%d/%d/TLM_%d", (unsigned long)targetUptime/100000,(unsigned long)targetUptime/1000, (unsigned long)targetUptime);
+    snprintf(requestTask.taskNameBuf, sizeof(requestTask.taskNameBuf), "LOG/%d/%d/%d/TLM_%d",(unsigned long)targetUptime/10000000, (unsigned long)targetUptime/100000,(unsigned long)targetUptime/1000, (unsigned long)targetUptime);
     Console::log("Opening File: %s", requestTask.taskNameBuf);
     fs->queTask(requestTask);
 //    fs->file_open(&requestFile, requestTask.taskNameBuf, LFS_O_RDONLY);

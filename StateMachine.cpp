@@ -104,13 +104,15 @@ void StateMachine::StateMachineRun()
                 char folderbuf[64];
                 snprintf(folderbuf, sizeof(folderbuf), "LOG");
                 fs.mkdir(folderbuf);
-                snprintf(folderbuf, sizeof(folderbuf), "LOG/%d", (unsigned long)correctedUptime/100000);
+                snprintf(folderbuf, sizeof(folderbuf), "LOG/%d", (unsigned long)correctedUptime/10000000);
                 fs.mkdir(folderbuf);
-                snprintf(folderbuf, sizeof(folderbuf), "LOG/%d/%d", (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000);
+                snprintf(folderbuf, sizeof(folderbuf), "LOG/%d/%d", (unsigned long)correctedUptime/10000000, (unsigned long)correctedUptime/100000);
+                fs.mkdir(folderbuf);
+                snprintf(folderbuf, sizeof(folderbuf), "LOG/%d/%d/%d", (unsigned long)correctedUptime/10000000, (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000);
                 fs.mkdir(folderbuf);
 
 
-                snprintf(logTask.taskNameBuf, sizeof(logTask.taskNameBuf), "LOG/%d/%d/TLM_%d", (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000, (unsigned long)correctedUptime);
+                snprintf(logTask.taskNameBuf, sizeof(logTask.taskNameBuf), "LOG/%d/%d/%d/TLM_%d", (unsigned long)correctedUptime/10000000, (unsigned long)correctedUptime/100000,(unsigned long)correctedUptime/1000, (unsigned long)correctedUptime);
                 logTask.taskOperation = FileSystemOperation::OWC;
                 logTask.taskCompleted = false;
                 logTask.taskSize = totalTelemetrySize;
