@@ -1,7 +1,7 @@
 #include "StateMachineService.h"
 
 extern StateMachine stateMachine;
-extern MB85RS fram;
+extern FRAMBackedVar<unsigned long> totalUptime;
 extern TelemetryRequestService tlmReqServ;
 
 StateMachineService::StateMachineService()//StateMachine &stateMachine_in)
@@ -73,8 +73,11 @@ bool StateMachineService::process(DataMessage &command, DataMessage &workingBuff
         case STATEMACHINE_COMPLETE_RESET:
             //1 FORMAT SD CARD
             tlmReqServ.formatFileSystem();
-            //2 FORMAT FRAM
-            fram.erase();
+
+            //2 RESET Total Uptime
+            totalUptime.write(0);
+            totalUptime.save();
+
             //(3 ENABLE BEACON?)
 
             //4 RESET
