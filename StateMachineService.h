@@ -1,6 +1,7 @@
 #include "Service.h"
 #include "StateMachine.h"
 #include "Console.h"
+#include "TelemetryRequestService.h"
 
 #ifndef STATEMACHINESERVICE_H_
 #define STATEMACHINESERVICE_H_
@@ -11,6 +12,8 @@
 #define STATEMACHINE_1SEC_BUBBLE           2
 #define STATEMACHINE_UPTIME_OVERRIDE       3
 #define STATEMACHINE_SET_BEACON            4
+
+#define STATEMACHINE_COMPLETE_RESET        5
 
 
 

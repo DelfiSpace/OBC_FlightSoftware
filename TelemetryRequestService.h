@@ -47,6 +47,8 @@ public:
     virtual bool process( DataMessage &command, DataMessage &workingBbuffer );
 
     void getTelemetry(unsigned long targetUptime);
+
+    void formatFileSystem();
 };
 
 

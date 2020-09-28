@@ -99,9 +99,7 @@ bool TelemetryRequestService::process(DataMessage &command, DataMessage &working
             break;
         case 5:
             Console::log("TelemetryService: Format Sd");
-            fs->unmount();
-            fs->format(sdcard);
-            fs->mount_async(sdcard);
+            this->formatFileSystem();
             workingBuffer.setPayloadSize(1);
             workingBuffer.getDataPayload()[0] = 0;
             break;
@@ -120,6 +118,13 @@ bool TelemetryRequestService::process(DataMessage &command, DataMessage &working
         // report the command was not processed
         return false;
     }
+}
+
+void TelemetryRequestService::formatFileSystem(){
+    fs->unmount();
+    fs->format(sdcard);
+    fs->mount_async(sdcard);
+    return;
 }
 
 void TelemetryRequestService::getTelemetry(unsigned long targetUptime){
