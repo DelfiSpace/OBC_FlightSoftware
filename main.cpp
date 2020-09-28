@@ -103,7 +103,7 @@ void acquireTelemetry(OBCTelemetryContainer *tc)
     unsigned char uc;
 
     //HouseKeeping Header:
-    tc->setStatus(Bootloader::getCurrentSlot());
+    tc->setStatus(Bootloader::getCurrentSlot() | ((stateMachine.currentState << 4) & 0xF0));
     fram.read(FRAM_RESET_COUNTER + Bootloader::getCurrentSlot(), &uc, 1);
     tc->setBootCounter(uc);
     tc->setResetCause(hwMonitor.getResetStatus());
