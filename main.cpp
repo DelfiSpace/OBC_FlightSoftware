@@ -54,7 +54,7 @@ Task* tasks[] = { &timerTask, &stateMachine, &cmdHandler, &fs };
 
 // system uptime
 unsigned long uptime = 0;
-FRAMVar<unsigned long> totalUptime;
+FRAMBackedVar<unsigned long> totalUptime;
 
 //Telemetry Container Buffers
 EPSTelemetryContainer EPSTlmBuffer;
@@ -146,7 +146,7 @@ void main(void)
 
     //init FRAM and FRAM Variables
     fram.init();
-    totalUptime.init(fram, FRAM_TOTAL_UPTIME);
+    totalUptime.init(fram, FRAM_TOTAL_UPTIME, true, true);
 
     // initialize the shunt resistor
     powerBus.setShuntResistor(40);

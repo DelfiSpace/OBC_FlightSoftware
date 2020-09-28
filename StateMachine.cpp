@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 StateMachine* _stub;
-extern FRAMVar<unsigned long> totalUptime;
+extern FRAMBackedVar<unsigned long> totalUptime;
 extern LittleFS fs;
 extern HousekeepingService<OBCTelemetryContainer> hk;
 
