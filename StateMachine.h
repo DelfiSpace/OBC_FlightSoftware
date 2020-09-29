@@ -25,17 +25,17 @@
 #include "LittleFS.h"
 
 
-#define ACTIVATION_TIME             2*60//15*60
+#define ACTIVATION_TIME             15*60 //2*60//
 
-#define ADB_DEPLOY_MAXTEMPWAIT      1*60//45*60
-#define ADB_DEPLOY_MINTEMP          200   //mC
-#define ADB_DEPLOY_TIMEOUT          1*60//10*60
+#define ADB_DEPLOY_MAXTEMPWAIT      45*60 //1*60//
+#define ADB_DEPLOY_MINTEMP          100   //mC
+#define ADB_DEPLOY_TIMEOUT          10*60 //1*60//
 
 #define DEPLOYMENT_VOLTAGE          3600
-#define SAFE_VOLTAGE                3400
-#define LOG_INTERVAL                10
+#define SAFE_VOLTAGE                3600
+#define LOG_INTERVAL                20
 
-#define BEACON_INTERVAL             60
+#define BEACON_INTERVAL             600
 
 #define FRAM_OBC_STATE              FRAM_DEVICE_SPECIFIC_SPACE
 #define FRAM_CURRENT_DEPLOY_TIME    FRAM_OBC_STATE + 1
