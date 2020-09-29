@@ -75,6 +75,8 @@ bool StateMachineService::process(DataMessage &command, DataMessage &workingBuff
             tlmReqServ.formatFileSystem();
 
             //2 RESET Total Uptime
+            stateMachine.currentState.write(0);
+            stateMachine.currentState.save();
             totalUptime.write(0);
             totalUptime.save();
 
