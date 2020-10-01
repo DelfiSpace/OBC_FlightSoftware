@@ -156,17 +156,29 @@ void StateMachine::StateMachineRun()
             getTelemetry(Address::EPS, EPSContainer.getArray());
 //            Console::log("Battery INA Status: %s | Battery GG Status: %s", EPSContainer.getBatteryINAStatus() ? "ACTIVE" : "ERROR", EPSContainer.getBatteryGGStatus() ? "ACTIVE" : "ERROR");
 
-            short batteryVoltage;
+            short batteryVoltage = 0;
+            short batteryVoltageGG = 0;
+            short batteryVoltageINA = 0;
+            short batteryVoltageUNREG = 0;
             if(EPSContainer.getBatteryGGStatus()){
-                batteryVoltage = EPSContainer.getBatteryGGVoltage();
-            }else if(EPSContainer.getBatteryINAStatus()){
-                batteryVoltage = EPSContainer.getBatteryINAVoltage();
-            }else{
-                //both sensors are dead...
-                batteryVoltage = DEPLOYMENT_VOLTAGE + 1;
+                batteryVoltageGG = EPSContainer.getBatteryGGVoltage();
+            }
+            if(EPSContainer.getBatteryINAStatus()){
+                batteryVoltageINA = EPSContainer.getBatteryINAVoltage();
+            }
+            if(EPSContainer.getUnregulatedINAStatus()){
+                batteryVoltageUNREG = EPSContainer.getUnregulatedINAVoltage();
             }
 
-            if(batteryVoltage > DEPLOYMENT_VOLTAGE){
+
+            if(!(EPSContainer.getBatteryGGStatus() ||  EPSContainer.getBatteryINAStatus() || EPSContainer.getUnregulatedINAStatus())){
+                //all sensors are dead...
+                batteryVoltage = DEPLOYMENT_VOLTAGE + 1;
+            }else{
+
+            }
+
+            if(batteryVoltage > DEPLOYMENT_VOLTAGE || batteryVoltageINA > DEPLOYMENT_VOLTAGE || batteryVoltageGG > DEPLOYMENT_VOLTAGE || batteryVoltageUNREG > DEPLOYMENT_VOLTAGE){
 
                 //current persistent DeployTime
                 currentDeployTime += 1;
@@ -257,22 +269,33 @@ void StateMachine::StateMachineRun()
                 bool EPSAlive = getTelemetry(Address::EPS, EPSContainer.getArray());
                 short batteryVoltage;
                 if(EPSAlive){
+                    short batteryVoltage = 0;
+                    short batteryVoltageGG = 0;
+                    short batteryVoltageINA = 0;
+                    short batteryVoltageUNREG = 0;
                     if(EPSContainer.getBatteryGGStatus()){
-                        batteryVoltage = EPSContainer.getBatteryGGVoltage();
-                    }else if(EPSContainer.getBatteryINAStatus()){
-                        batteryVoltage = EPSContainer.getBatteryINAVoltage();
-                    }else{
-                        //both sensors are dead...
-                        batteryVoltage = SAFE_VOLTAGE + 1;
+                        batteryVoltageGG = EPSContainer.getBatteryGGVoltage();
                     }
-                    Console::log("OPERATIONAL: - SAFE - current totalTime: %d s | Battery Voltage %d mV", correctedUptime, batteryVoltage);
+                    if(EPSContainer.getBatteryINAStatus()){
+                        batteryVoltageINA = EPSContainer.getBatteryINAVoltage();
+                    }
+                    if(EPSContainer.getUnregulatedINAStatus()){
+                        batteryVoltageUNREG = EPSContainer.getUnregulatedINAVoltage();
+                    }
+
+
+                    if(!(EPSContainer.getBatteryGGStatus() ||  EPSContainer.getBatteryINAStatus() || EPSContainer.getUnregulatedINAStatus())){
+                        //all sensors are dead...
+                        batteryVoltage = DEPLOYMENT_VOLTAGE + 1;
+                    }
+
                 }else{
                     //EPS is dead...
                     batteryVoltage = SAFE_VOLTAGE + 1;
                     Console::log("OPERATIONAL: - SAFE - current totalTime: %d s | - EPS DEAD -", correctedUptime, batteryVoltage);
 
                 }
-                if(batteryVoltage > SAFE_VOLTAGE){
+                if(batteryVoltage > SAFE_VOLTAGE || batteryVoltageINA > SAFE_VOLTAGE || batteryVoltageGG > SAFE_VOLTAGE || batteryVoltageUNREG > SAFE_VOLTAGE){
                     operationalState = 1;
                 }
                 break;

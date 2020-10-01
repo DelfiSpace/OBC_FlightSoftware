@@ -35,7 +35,7 @@
 #define SAFE_VOLTAGE                3600
 #define LOG_INTERVAL                20
 
-#define BEACON_INTERVAL             600
+#define BEACON_INTERVAL             5*60
 
 #define FRAM_OBC_STATE              FRAM_DEVICE_SPECIFIC_SPACE
 #define FRAM_CURRENT_DEPLOY_TIME    FRAM_OBC_STATE + 1
