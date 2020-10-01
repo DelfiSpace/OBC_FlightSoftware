@@ -46,6 +46,7 @@
 #include "DSPI_A.h"
 #include "TelemetryRequestService.h"
 #include "Telemetry/EPSTelemetryContainer.h"
+#include "BootloaderOverrideService.h"
 
 #define FCLOCK 48000000
 

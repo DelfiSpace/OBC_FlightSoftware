@@ -40,12 +40,12 @@ SoftwareUpdateService SWupdate(fram);
 SoftwareUpdateService SWupdate(fram, (uint8_t*)xtr(SW_VERSION));
 #endif
 
-Service* services[] = { &ping, &reset, &hk, &SWupdate, &framServ, &tlmReqServ, &stateMachineService };
+Service* services[] = { &ping, &reset, &hk, &SWupdate, &framServ, &tlmReqServ, &stateMachineService, &bootLoaderOverrideServ };
 
 
 // OBC board tasks
-CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 7);
-InternalCommandHandler<PQ9Frame,PQ9Message> internalCmdHandler(services, 7);
+CommandHandler<PQ9Frame, PQ9Message> cmdHandler(pq9bus, services, 8);
+InternalCommandHandler<PQ9Frame,PQ9Message> internalCmdHandler(services, 8);
 PeriodicTask timerTask(1000, periodicTask);
 StateMachine stateMachine(fram, busHandler, internalCmdHandler);
 PeriodicTask* periodicTasks[] = {&timerTask, &stateMachine};
