@@ -31,6 +31,7 @@ void StateMachine::init(){
     this->currentState.init(*fram, FRAM_OBC_STATE, true, true);
     this->currentDeployTime.init(*fram, FRAM_CURRENT_DEPLOY_TIME, true, true);
     this->beaconEnabled.init(*fram, FRAM_BEACON_ENABLED, true, true);
+    this->lastMsgReceived.init(*fram, FRAM_LAST_MSG_TIME ,true,true);
 }
 
 bool StateMachine::notified(){
@@ -53,7 +54,7 @@ void StateMachine::StateMachineRun()
     }else if(runPeriodic){
         //get Messages from COMMS:
         unsigned char payload = 3; //command to ask the nr of messages
-        rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, ServiceNumber::Radio, MsgType::Request, 200);
+        rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, ServiceNumber::Radio, MsgType::Request, 50);
         if(rcvdMsg){
             if(rcvdMsg->getDataPayload()[0] == 0){
                 MsgsInQue = rcvdMsg->getDataPayload()[1];
@@ -71,6 +72,7 @@ void StateMachine::StateMachineRun()
             waitTime--;
         }
 
+
         //LOGGING OPERATION
         //correction on uptime race-condition
         if((unsigned long) totalUptime == correctedUptime){
@@ -83,6 +85,13 @@ void StateMachine::StateMachineRun()
             correctedUptime = (unsigned long) totalUptime;
         }
 
+        //RESET BATTERY IF NO LAST MSG RECEIVED
+        if(correctedUptime - (unsigned long)lastMsgReceived > MIN_MSG_INTERVAL && (unsigned long) lastMsgReceived != 0){
+            Console::log("Havent received any ground messages, reset battery");
+            lastMsgReceived = correctedUptime;
+            uint8_t resetPayload = 5;
+            rcvdMsg = busHandler->RequestReply(Address::EPS, 1, &resetPayload, ServiceNumber::PowerBus, MsgType::Request, 50);
+        }
 
         if((unsigned long) correctedUptime % LOG_INTERVAL == 0){
             //collect Telemetry

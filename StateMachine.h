@@ -25,21 +25,25 @@
 #include "LittleFS.h"
 
 
-#define ACTIVATION_TIME             15*60 //2*60//
+#define ACTIVATION_TIME             900 //15*60//
 
-#define ADB_DEPLOY_MAXTEMPWAIT      45*60 //1*60//
-#define ADB_DEPLOY_MINTEMP          100   //mC
-#define ADB_DEPLOY_TIMEOUT          10*60 //1*60//
+#define ADB_DEPLOY_MAXTEMPWAIT      2700  //45*60
+#define ADB_DEPLOY_MINTEMP          150   //mC
+#define ADB_DEPLOY_TIMEOUT          600 //10*60//
 
 #define DEPLOYMENT_VOLTAGE          3600
 #define SAFE_VOLTAGE                3600
 #define LOG_INTERVAL                20
 
-#define BEACON_INTERVAL             5*60
+#define BEACON_INTERVAL             60
+
+#define MIN_MSG_INTERVAL            604800//7*24*3600
 
 #define FRAM_OBC_STATE              FRAM_DEVICE_SPECIFIC_SPACE
 #define FRAM_CURRENT_DEPLOY_TIME    FRAM_OBC_STATE + 1
 #define FRAM_BEACON_ENABLED         FRAM_CURRENT_DEPLOY_TIME + 4
+#define FRAM_LAST_MSG_TIME          FRAM_BEACON_ENABLED + 1
+
 
 enum OBCState {Activation = 0x00, Deploy = 0x01, Normal = 0x02 };
 
@@ -58,6 +62,8 @@ public:
     void overrideTotalUptime(unsigned long newUptime);
 
     FRAMBackedVar<uint8_t> beaconEnabled;
+    FRAMBackedVar<unsigned long> lastMsgReceived;
+
 
 
 private:
