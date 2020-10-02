@@ -365,7 +365,7 @@ void StateMachine::processCOMMBuffer(){
     uint8_t payload = 4;
     rcvdMsg = busHandler->RequestReply(Address::COMMS, 1, &payload, ServiceNumber::Radio, MsgType::Request, 200);
     if(rcvdMsg){
-        if(rcvdMsg->getDataPayload()[0] == 0 && rcvdMsg->getPayloadSize() > 7){ //Command = OK  //
+        if(rcvdMsg->getDataPayload()[0] == 0){ //Command = OK  //
             uint8_t commandID = rcvdMsg->getDataPayload()[1];
             Console::log("ID: %d | DST:%d | SRC:%d | SRV: %d | TYPE:%d | PAY0:%d", commandID,
                          rcvdMsg->getDataPayload()[0+2], rcvdMsg->getDataPayload()[2+2], rcvdMsg->getDataPayload()[3+2],  rcvdMsg->getDataPayload()[4+2], rcvdMsg->getDataPayload()[5+2]);
