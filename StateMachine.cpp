@@ -243,6 +243,9 @@ void StateMachine::StateMachineRun()
                     }
                     break;
                 case 3: //Check if deployed
+                    //WORKAROUND FOR BURNSERVICE BUG (ISSUE #2 IN ADB_FlightSoftware)
+                    deployPayload = 1;
+                    reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
                     deployPayload = 0;
                     reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
                     if(reply){
