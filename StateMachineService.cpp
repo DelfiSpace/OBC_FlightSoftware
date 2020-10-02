@@ -81,14 +81,10 @@ bool StateMachineService::process(DataMessage &command, DataMessage &workingBuff
             totalUptime.save();
 
             //(3 ENABLE BEACON?)
-            stateMachine.beaconEnabled.write(1);
-            stateMachine.beaconEnabled.save();
-            stateMachine.beaconEnabled = 1;
+            stateMachine.beaconEnabled = (uint8_t ) 1;
 
             // SET last received to NOT 0
-            stateMachine.lastMsgReceived.write(1);
-            stateMachine.lastMsgReceived.save();
-            stateMachine.lastMsgReceived = 1;
+            stateMachine.lastMsgReceived = (unsigned long) 1;
 
             //4 RESET
             this->setPostFunc([](){MAP_SysCtl_A_rebootDevice();});

@@ -88,7 +88,7 @@ void StateMachine::StateMachineRun()
         //RESET BATTERY IF NO LAST MSG RECEIVED
         if(correctedUptime - (unsigned long)lastMsgReceived > MIN_MSG_INTERVAL && (unsigned long) lastMsgReceived != 0){
             Console::log("Havent received any ground messages, reset battery");
-            lastMsgReceived = correctedUptime;
+            lastMsgReceived = (unsigned long) correctedUptime;
             uint8_t resetPayload = 5;
             rcvdMsg = busHandler->RequestReply(Address::EPS, 1, &resetPayload, ServiceNumber::PowerBus, MsgType::Request, 50);
         }
@@ -276,12 +276,12 @@ void StateMachine::StateMachineRun()
             switch(this->operationalState){
             case 0: //SAFEMODE
                 bool EPSAlive = getTelemetry(Address::EPS, EPSContainer.getArray());
-                short batteryVoltage;
+                short batteryVoltage = 0;
+                short batteryVoltageGG = 0;
+                short batteryVoltageINA = 0;
+                short batteryVoltageUNREG = 0;
                 if(EPSAlive){
-                    short batteryVoltage = 0;
-                    short batteryVoltageGG = 0;
-                    short batteryVoltageINA = 0;
-                    short batteryVoltageUNREG = 0;
+
                     if(EPSContainer.getBatteryGGStatus()){
                         batteryVoltageGG = EPSContainer.getBatteryGGVoltage();
                     }
@@ -304,13 +304,14 @@ void StateMachine::StateMachineRun()
                     Console::log("OPERATIONAL: - SAFE - current totalTime: %d s | - EPS DEAD -", correctedUptime, batteryVoltage);
 
                 }
+                Console::log("OPERATIONAL: - SAFE - current totalTime: %d s | GG: %d | INA: %d | UNREG %d | BatVolt: %d", correctedUptime, batteryVoltageGG, batteryVoltageINA, batteryVoltageUNREG, batteryVoltage);
                 if(batteryVoltage > SAFE_VOLTAGE || batteryVoltageINA > SAFE_VOLTAGE || batteryVoltageGG > SAFE_VOLTAGE || batteryVoltageUNREG > SAFE_VOLTAGE){
                     operationalState = 1;
                 }
                 break;
             case 1:
-                Console::log("OPERATIONAL: - NOMINAL - current totalTime: %d s", correctedUptime);
-                if(correctedUptime % BEACON_INTERVAL == 0 && beaconEnabled == 1){
+                Console::log("OPERATIONAL: - NOMINAL - current totalTime: %d s - BEACON ENABLED: %d", correctedUptime, (uint8_t )beaconEnabled);
+                if(correctedUptime % BEACON_INTERVAL == 0 && (uint8_t ) beaconEnabled == 1){
                    Console::log("OPERATIONAL: BEACON TRANSMIT!", correctedUptime);
                    //get Pointer to target system
 
