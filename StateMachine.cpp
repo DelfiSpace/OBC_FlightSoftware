@@ -198,16 +198,16 @@ void StateMachine::StateMachineRun()
                 //check if already deployed
                 uint8_t deployPayload = 0;
                 PQ9Message* reply = busHandler->RequestReply(Address::ADB, 1, &deployPayload, ServiceNumber::DeployService, MsgType::Request, 50);
-                if(reply){
-                    if(reply->getDataPayload()[1] == 0x0F){
-                        Console::log("DEPLOY: +Deployed! ");
-                        currentState = OBCState::Normal;
-                        break;
-                    }
-                }else{
-                    Console::log("DEPLOY: ADB NOT RESPONDING!");
-                    break;
-                }
+//                if(reply){
+//                    if(reply->getDataPayload()[1] == 0x0F){
+//                        Console::log("DEPLOY: +Deployed! ");
+////                        currentState = OBCState::Normal;
+//                        break;
+//                    }
+//                }else{
+//                    Console::log("DEPLOY: ADB NOT RESPONDING!");
+//                    break;
+//                }
 
                 switch(deployMode){
                 case 0: //Temperature or temperature wait timeout
